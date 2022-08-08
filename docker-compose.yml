@@ -2,13 +2,13 @@ version: "3.8"
 
 services:
   isulogger-app:
-      container_name: isulogger-app
+      container_name: isulogger-server
       build:
-        context: ./webapp
+        context: ./server
         dockerfile: Dockerfile
       restart: always
       tty: true
       volumes:
-        - ./webapp:/go/src/app
+        - ./server:/go/src/app
       ports:
         - "8082:8082"
