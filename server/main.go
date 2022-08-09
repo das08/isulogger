@@ -13,6 +13,8 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.Use(middleware.CORS())
+
 	e.GET("/", hello)
 
 	e.Logger.Fatal(e.Start(":8082"))
