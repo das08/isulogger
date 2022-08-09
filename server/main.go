@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -19,9 +20,14 @@ var (
 )
 
 type LogEntry struct {
-	IsuconID  int       `json:"isucon_id" db:"isucon_id"`
-	Timestamp time.Time `json:"timestamp" db:"timestamp"`
-	Score     int       `json:"score" db:"score"`
+	ID            int       `json:"id" db:"id"`
+	IsuconID      int       `json:"isucon_id" db:"isucon_id"`
+	Timestamp     time.Time `json:"timestamp" db:"timestamp"`
+	Score         int       `json:"score" db:"score"`
+	Message       string    `json:"message" db:"message"`
+	AccessLogPath string    `json:"access_log_path" db:"access_log_path"`
+	SlowLogPath   string    `json:"slow_log_path" db:"slow_log_path"`
+	ImagePath     string    `json:"image_path" db:"image_path"`
 }
 
 func initializeDB() *sql.DB {
@@ -33,13 +39,44 @@ func initializeDB() *sql.DB {
 }
 
 // Add a new log entry to the database
-func insertLogEntry(entry *LogEntry) (bool, int) {
+func insertLogEntry(entry *LogEntry) (bool, string) {
+	if entry.IsuconID == 0 {
+		return false, ""
+	}
+	if entry.Timestamp.IsZero() {
+		entry.Timestamp = time.Now()
+	}
+
 	var id int
 	err := db.QueryRow("INSERT INTO entry(isucon_id, timestamp, score) VALUES($1,$2,$3) RETURNING id", entry.IsuconID, entry.Timestamp, entry.Score).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
-	return id > 0, id
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, ""
+	}
+}
+
+func selectLogEntry(isuconID int) []LogEntry {
+	var entry []LogEntry
+	rows, err := db.Query("SELECT * FROM entry WHERE isucon_id = $1", isuconID)
+	if err != nil {
+		fmt.Println("Error: Get entry failed: ", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var e LogEntry
+		err := rows.Scan(&e.ID, &e.IsuconID, &e.Timestamp, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
+		if err != nil {
+			fmt.Println("Error: Scan entry failed: ", err)
+		} else {
+			entry = append(entry, e)
+		}
+	}
+	return entry
 }
 
 func main() {
@@ -57,6 +94,7 @@ func main() {
 	e.GET("/", hello)
 
 	e.GET("/new", createLogEntry)
+	e.GET("/get", getLogEntry)
 
 	e.Logger.Fatal(e.Start(":8082"))
 }
@@ -66,14 +104,27 @@ func hello(c echo.Context) error {
 }
 
 func createLogEntry(c echo.Context) error {
-	entry := new(LogEntry)
+	entry := LogEntry{}
 	entry.IsuconID = 1
 	entry.Timestamp = time.Now()
 	entry.Score = 777
 
-	if ok, id := insertLogEntry(entry); !ok {
+	if ok, id := insertLogEntry(&entry); !ok {
 		return echo.ErrInternalServerError
 	} else {
 		return c.JSON(http.StatusOK, id)
 	}
+}
+
+func getLogEntry(c echo.Context) error {
+	isuconIDRaw := c.QueryParam("isucon_id")
+	if isuconIDRaw == "" {
+		return echo.ErrBadRequest
+	}
+	isuconID, err := strconv.Atoi(isuconIDRaw)
+	if err != nil {
+		return echo.ErrBadRequest
+	}
+	entry := selectLogEntry(isuconID)
+	return c.JSON(http.StatusOK, entry)
 }
