@@ -8,6 +8,11 @@ services:
         dockerfile: Dockerfile
       restart: always
       tty: true
+      environment:
+        POSTGRES_USER: admin
+        POSTGRES_PASSWORD: admin
+      depends_on:
+        - isulogger-db
       volumes:
         - ./server:/go/src/app
       ports:
