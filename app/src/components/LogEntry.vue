@@ -7,22 +7,49 @@
         :headers="headers"
         :items="entries"
         :loading="loading"
+        :footer-props="{
+          'items-per-page-options': [10, 20, 30, 40, 50]
+        }"
+        :items-per-page="20"
         loading-text="Loading... Please wait"
     >
+
+      <template v-slot:[`item.max_score`]="{ item }">
+        <template v-if="item.score === maxScore()">
+          <v-icon small class="mr-2"> mdi-crown </v-icon>
+        </template>
+      </template>
+
       <template v-slot:[`item.score`]="{ item }">
         <strong>{{ item.score }}</strong>
       </template>
 
       <template v-slot:[`item.access_log`]="{ item }">
-        <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log')">
-          <v-icon dark>mdi-server</v-icon>
-        </v-btn>
+        <template v-if="item.access_log_path === ''">
+          <v-btn class="mx-2" fab small color="primary" disabled>
+            <v-icon dark>mdi-server</v-icon>
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log')">
+            <v-icon dark>mdi-server</v-icon>
+          </v-btn>
+        </template>
+
       </template>
 
       <template v-slot:[`item.slow_log`]="{ item }">
-        <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(item, 'Slow Log')">
-          <v-icon dark>mdi-database</v-icon>
-        </v-btn>
+        <template v-if="item.slow_log_path === ''">
+          <v-btn class="mx-2" fab small color="secondary" disabled>
+            <v-icon dark>mdi-database</v-icon>
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(item, 'Slow Log')">
+            <v-icon dark>mdi-database</v-icon>
+          </v-btn>
+        </template>
+
       </template>
 
       <template v-slot:[`item.status`]="{}">
@@ -69,12 +96,14 @@ export default {
           align: 'start',
           filterable: true,
           value: 'timestamp',
+          width: '15%',
         },
-        { text: 'Score', value: 'score' },
-        { text: 'Message', value: 'message' },
-        { text: 'Access Log', value: 'access_log' },
-        { text: 'Slow Log', value: 'slow_log' },
-        { text: 'Status', value: 'status' },
+        { text: 'Best', value: 'max_score', width: '10%', align: 'end'},
+        { text: 'Score', value: 'score', width: '10%' },
+        { text: 'Message', value: 'message', width: '25%' },
+        { text: 'Access Log', value: 'access_log', width: '10%' },
+        { text: 'Slow Log', value: 'slow_log', width: '10%' },
+        { text: 'Status', value: 'status', width: '20%' },
       ],
       entries: [],
       dialog: false,
@@ -146,6 +175,10 @@ export default {
         return "black";
       }
     },
+
+    maxScore() {
+      return this.entries.reduce((a,b)=>a.score>b.score?a:b).score;
+    }
   },
 
   mounted() {
@@ -171,7 +204,7 @@ function convertTimestamp(timestamp) {
 #log_dialog {
   white-space: pre;
   word-wrap: normal;
-  font-family: Monaco;
+  font-family: Monaco,monospace;
   font-size: 12px;
 }
 </style>
