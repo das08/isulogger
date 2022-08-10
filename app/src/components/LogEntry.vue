@@ -91,11 +91,9 @@ export default defineComponent({
           label: "Access Log",
           field: "access_log",
           width: "10%",
-          display: function (row) {
+          display: function () {
             return (
-                '<button type="button" data-id="' +
-                row.id +
-                '" class="is-rows-el quick-btn">Button</button>'
+                '<v-btn depressed elevation="2" rounded>aa</v-btn>'
             );
           },
         },

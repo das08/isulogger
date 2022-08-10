@@ -5,6 +5,7 @@
     <p>{{message}}</p>
     <a href="/logs">View Logs</a>
   </div>
+  <v-btn depressed elevation="2" rounded>aa</v-btn>
 </template>
 
 <script>
