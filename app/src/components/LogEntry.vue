@@ -1,6 +1,24 @@
 <template>
   <v-card>
     <v-card-title>
+      <v-container fluid>
+        <v-row align="center">
+          <v-col
+              class="d-flex"
+              cols="12"
+              sm="6"
+          >
+            <v-select
+                :items="contests"
+                item-text="contest_name"
+                item-value="contest_id"
+                label="Outlined style"
+                outlined
+            ></v-select>
+          </v-col>
+        </v-row>
+      </v-container>
+
       <span class="headline">ISUCON12本選</span>
     </v-card-title>
     <v-data-table
@@ -90,6 +108,7 @@ export default {
   data () {
     return {
       loading: false,
+      contests: [],
       headers: [
         {
           text: 'Timestamp',
@@ -112,7 +131,7 @@ export default {
     }
   },
   methods: {
-    getData() {
+    getLogEntry() {
       this.loading = true;
       return axios
           .get("http://localhost:8082/get?contest_id=1", {
@@ -130,6 +149,22 @@ export default {
               this.entries.push(response.data[i]);
             }
             this.loading = false;
+          })
+          .catch((err) => alert(err));
+    },
+
+    getContest() {
+      return axios
+          .get("http://localhost:8082/get_contest", {
+            dataType: "json",
+          })
+          .then((response) => {
+            console.log(response);
+            if (response.data === null) {
+              this.contests = [];
+              return;
+            }
+            this.contests = response.data;
           })
           .catch((err) => alert(err));
     },
@@ -187,7 +222,8 @@ export default {
   },
 
   mounted() {
-    this.getData();
+    this.getContest();
+    this.getLogEntry();
   },
 }
 

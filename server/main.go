@@ -81,6 +81,26 @@ func insertContest(contest *Contest) (bool, string) {
 	}
 }
 
+func selectContest() []Contest {
+	var contest []Contest
+	rows, err := db.Query("SELECT * FROM contest ORDER BY contest_id DESC ")
+	if err != nil {
+		fmt.Println("Error: Get contest failed: ", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var c Contest
+		err := rows.Scan(&c.ContestID, &c.ContestName)
+		if err != nil {
+			fmt.Println("Error: Scan contest failed: ", err)
+		} else {
+			contest = append(contest, c)
+		}
+	}
+	return contest
+}
+
 func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	var entry []LogEntry
 	query := "SELECT * FROM entry WHERE contest_id = $1 ORDER BY timestamp asc"
@@ -122,6 +142,7 @@ func main() {
 	e.GET("/new_log", createLogEntry)
 	e.GET("/new_contest", createContest)
 	e.GET("/get", getLogEntry)
+	e.GET("/get_contest", getContest)
 
 	e.Static("/log", "log")
 
@@ -181,4 +202,9 @@ func getLogEntry(c echo.Context) error {
 	}
 	entry := selectLogEntry(contestID, orderBy)
 	return c.JSON(http.StatusOK, entry)
+}
+
+func getContest(c echo.Context) error {
+	contest := selectContest()
+	return c.JSON(http.StatusOK, contest)
 }
