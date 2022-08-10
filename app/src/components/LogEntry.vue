@@ -13,14 +13,14 @@
         <strong>{{ item.score }}</strong>
       </template>
 
-      <template v-slot:[`item.access_log`]="{}">
-        <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(row.item.access_log)">
+      <template v-slot:[`item.access_log`]="{ item }">
+        <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log')">
           <v-icon dark>mdi-server</v-icon>
         </v-btn>
       </template>
 
-      <template v-slot:[`item.slow_log`]="{}">
-        <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(row.item.slow_log)">
+      <template v-slot:[`item.slow_log`]="{ item }">
+        <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(item, 'Slow Log')">
           <v-icon dark>mdi-database</v-icon>
         </v-btn>
       </template>
@@ -32,7 +32,38 @@
       </template>
 
     </v-data-table>
+
+    <v-row justify="center">
+      <v-dialog
+          v-model="dialog"
+          scrollable
+          width="95%"
+      >
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+              color="primary"
+              dark
+              v-bind="attrs"
+              v-on="on"
+          >
+            Open Dialog
+          </v-btn>
+        </template>
+        <v-card>
+          <v-card-title>
+            <span class="text-h5">{{ log_type }} Result</span>
+          </v-card-title>
+          <v-card-text>
+            <span class="text-subtitle-1">{{ log_contents.timestamp }} (Score: {{ log_contents.score }})</span>
+          </v-card-text>
+          <v-card-text id="log_dialog">
+            {{ log_contents.log }}
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </v-row>
   </v-card>
+
 </template>
 
 <script>
@@ -56,6 +87,9 @@ export default {
         { text: 'Status', value: 'status' },
       ],
       entries: [],
+      dialog: false,
+      log_type: "",
+      log_contents: [],
     }
   },
   methods: {
@@ -75,8 +109,34 @@ export default {
           })
           .catch((err) => alert(err));
     },
-    onButtonClick(item) {
-      console.log(item);
+
+    onButtonClick(item, logType) {
+      let filePath = "";
+      if (logType === "Access Log") {
+        filePath = item.access_log_path;
+      } else if (logType === "Slow Log") {
+        filePath = item.slow_log_path;
+      }
+      console.log(filePath);
+      if (filePath === undefined || filePath === "") {
+        return;
+      }
+      return axios
+          .get("http://localhost:8082/log/"+filePath+"?id=1", {
+            dataType: "text",
+          })
+          .then((response) => {
+            console.log(response.data);
+            this.log_contents = {
+              log: response.data,
+              score: item.score,
+              timestamp: item.timestamp,
+            }
+
+            this.log_type = logType;
+            this.dialog = true;
+          })
+          .catch((err) => alert(err))
     },
 
     compareScore(index) {
@@ -116,3 +176,12 @@ function convertTimestamp(timestamp) {
   return year + "/" + month + "/" + day + " " + hour + ":" + min + ":" + sec;
 }
 </script>
+
+<style scoped>
+#log_dialog {
+  white-space: pre;
+  word-wrap: normal;
+  font-family: Monaco;
+  font-size: 12px;
+}
+</style>

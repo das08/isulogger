@@ -100,6 +100,8 @@ func main() {
 	e.GET("/new", createLogEntry)
 	e.GET("/get", getLogEntry)
 
+	e.Static("/log", "log")
+
 	e.Logger.Fatal(e.Start(":8082"))
 }
 
