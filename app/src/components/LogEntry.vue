@@ -206,7 +206,7 @@ export default {
 
     onContestSelect(contestID) {
       this.selected_contest = contestID;
-      sessionStorage.setItem("contest_id", contestID);
+      localStorage.setItem("contest_id", contestID);
       this.getLogEntry(contestID);
     },
 
@@ -234,8 +234,8 @@ export default {
   },
 
   mounted() {
-    if(Object.prototype.hasOwnProperty.call(sessionStorage, "contest_id")) {
-      this.selected_contest = JSON.parse(sessionStorage.getItem("contest_id"));
+    if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
+      this.selected_contest = JSON.parse(localStorage.getItem("contest_id"));
       console.log("mounted",this.selected_contest);
       this.getLogEntry(this.selected_contest);
     }
