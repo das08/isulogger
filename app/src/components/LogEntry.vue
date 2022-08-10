@@ -9,24 +9,28 @@
         :loading="loading"
         loading-text="Loading... Please wait"
     >
-      <template v-slot:item="row">
-        <tr>
-          <td>{{row.item.timestamp}}</td>
-          <td>{{row.item.score}}</td>
-          <td>{{row.item.message}}</td>
-          <td>
-            <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(row.item.access_log)">
-              <v-icon dark>mdi-server</v-icon>
-            </v-btn>
-          </td>
-          <td>
-            <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(row.item.slow_log)">
-              <v-icon dark>mdi-database</v-icon>
-            </v-btn>
-          </td>
-          <td>{{row.item.status}}</td>
-        </tr>
+      <template v-slot:[`item.score`]="{ item }">
+        <strong>{{ item.score }}</strong>
       </template>
+
+      <template v-slot:[`item.access_log`]="{}">
+        <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(row.item.access_log)">
+          <v-icon dark>mdi-server</v-icon>
+        </v-btn>
+      </template>
+
+      <template v-slot:[`item.slow_log`]="{}">
+        <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(row.item.slow_log)">
+          <v-icon dark>mdi-database</v-icon>
+        </v-btn>
+      </template>
+
+      <template v-slot:[`item.status`]="{}">
+        <v-chip color="green" outlined small>
+          Completed
+        </v-chip>
+      </template>
+
     </v-data-table>
   </v-card>
 </template>
@@ -73,6 +77,24 @@ export default {
     },
     onButtonClick(item) {
       console.log(item);
+    },
+
+    compareScore(index) {
+      let maxScore = this.entries.reduce((a,b)=>a.score>b.score?a:b);
+      if (this.entries[index].score === maxScore.score) {
+        return "blue";
+      }
+      if (index < this.entries.length -1 ) {
+        if (this.entries[index].score > this.entries[index + 1].score) {
+          return "green";
+        } else if (this.entries[index].score < this.entries[index + 1].score) {
+          return "red";
+        } else {
+          return "black";
+        }
+      } else {
+        return "black";
+      }
     },
   },
 
