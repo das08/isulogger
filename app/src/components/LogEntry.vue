@@ -2,6 +2,26 @@
   <v-card>
     <v-card-title>
       <span class="headline">ISUCON12本選</span>
+      <span class="headline-right">
+        <v-btn
+          color="primary"
+          dark
+          @click="compareAlp"
+          class="diff-btn"
+          :disabled="!readyToCompare"
+        >
+          diff alp
+        </v-btn>
+        <v-btn
+          color="primary"
+          dark
+          @click="compareSlowLog"
+          class="diff-btn"
+          :disabled="!readyToCompare"
+        >
+          diff slowlog
+        </v-btn>
+      </span>
     </v-card-title>
     <v-data-table
         :headers="headers"
@@ -125,6 +145,11 @@ export default {
       },
     }
   },
+  computed: {
+    readyToCompare() {
+      return this.compare.compare1 !== null && this.compare.compare2 !== null;
+    }
+  },
   methods: {
     getData() {
       this.loading = true;
@@ -206,6 +231,13 @@ export default {
         this.compare.compare2 = id;
       }
     },
+
+    compareAlp() {
+
+    },
+    compareSlowLog() {
+
+    },
   },
 
   mounted() {
@@ -233,5 +265,14 @@ function convertTimestamp(timestamp) {
   word-wrap: normal;
   font-family: Monaco,monospace;
   font-size: 12px;
+}
+
+.headline-right {
+  margin-left: auto;
+}
+
+.diff-btn {
+  margin-left: 3px;
+  margin-right: 3px;
 }
 </style>
