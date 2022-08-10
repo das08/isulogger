@@ -1,9 +1,11 @@
 package parser
 
 import (
+	"errors"
 	"log"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 type AlpData []AlpRow
@@ -37,72 +39,58 @@ var (
 
 func init() {
 	alpColumns = []string{
-		"count", "count100", "count200", "count300", "count400", "count500", "method", "uri", "min", "max", "sum", "avg", "p90", "p95", "p99", "stddev", "minbody", "maxbody", "sumbody", "avgbody",
+		"Count", "Count100", "Count200", "Count300", "Count400", "Count500", "Method", "URI", "Min", "Max", "Sum", "Avg", "P90", "P95", "P99", "Stddev", "MinBody", "MaxBody", "SumBody", "AvgBody",
 	}
 }
 
 func ParseAlpData(alpstring string) (AlpData, error) {
-
+	lines := strings.Split(alpstring, "\n")
+	alpdata := make(AlpData, 0)
+	for _, line := range lines[3:] {
+		row, ok := ParseAlpRow(line)
+		if !ok {
+			errors.New("failed to parse")
+		}
+		alpdata = append(alpdata, row)
+	}
+	return alpdata, nil
 }
 
 func ParseAlpRow(alpline string) (AlpRow, bool) {
-	i := 0
-	k := -1
-	substrStart := 0
-	substrEnd := 0
-	var alpRow AlpRow
-	for {
-		columnEnd := false
-		if string(alpline[i]) == " " {
-			i += 1
-			columnEnd = true
-		}
-		if string(alpline[i]) == "|" {
-			i += 1
-			k += 1
-			columnEnd = true
-		}
+	var row AlpRow
+	split := strings.Split(alpline, "|")
 
-		if columnEnd {
-			substrEnd = i
-			substr := alpline[substrStart:substrEnd]
-			columnName := alpColumns[k]
-			field := reflect.ValueOf(alpRow).FieldByName(columnName)
-			switch field.Kind() {
-			case reflect.Int:
-				i, err := strconv.ParseInt(substr, 10, 64)
-				if err != nil {
-					log.Println(err)
-					return alpRow, false
-				}
-				field.SetInt(i)
-			case reflect.String:
-				field.SetString(substr)
-			case reflect.Float64:
-				f, err := strconv.ParseFloat(substr, 64)
-				if err != nil {
-					log.Println(err)
-					return alpRow, false
-				}
-				field.SetFloat(f)
-			default:
-				panic("unreachable")
-			}
-			continue
-		}
+	prrow := reflect.ValueOf(&row)
+	rrow := prrow.Elem()
 
-		if k < 0 {
+	for i, columnName := range alpColumns {
+		if i+1 >= len(split) {
 			return AlpRow{}, false
 		}
-		if k >= len(alpColumns) {
-			break
+		columnStr := split[i+1]
+		columnStr = strings.TrimSpace(columnStr)
+		field := rrow.FieldByName(columnName)
+		switch field.Kind() {
+		case reflect.Int:
+			if val, err := strconv.Atoi(columnStr); err == nil {
+				field.SetInt(int64(val))
+			} else {
+				log.Printf("Error parsing %s: %s", columnName, err)
+				return AlpRow{}, false
+			}
+		case reflect.Float64:
+			if val, err := strconv.ParseFloat(columnStr, 64); err == nil {
+				field.SetFloat(val)
+			} else {
+				log.Printf("Error parsing %s: %s", columnName, err)
+				return AlpRow{}, false
+			}
+		case reflect.String:
+			field.SetString(columnStr)
+		default:
+			ty := field.Kind().String()
+			panic("unreachable: " + ty + " (" + columnName + ")")
 		}
-
-		if substrStart == substrEnd {
-			substrStart = i
-			substrEnd = i + 1
-		}
-
-		i += 1
 	}
+	return row, true
 }
