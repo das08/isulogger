@@ -53,7 +53,7 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 
 	var id int
-	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score) VALUES($1,$2,$3) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score).Scan(&id)
+	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score, message) VALUES($1,$2,$3,$4) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score, entry.Message).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
@@ -150,10 +150,24 @@ func hello(c echo.Context) error {
 }
 
 func createLogEntry(c echo.Context) error {
+	_contestID := c.QueryParam("contest_id")
+	_score := c.QueryParam("score")
+	message := c.QueryParam("message")
+
+	contestID, err := strconv.Atoi(_contestID)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid contest_id")
+	}
+	score, err := strconv.Atoi(_score)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid score")
+	}
+
 	entry := LogEntry{}
-	entry.ContestID = 1
+	entry.ContestID = contestID
 	entry.Timestamp = time.Now()
-	entry.Score = 777
+	entry.Score = score
+	entry.Message = message
 
 	if ok, id := insertLogEntry(&entry); !ok {
 		return echo.ErrInternalServerError
