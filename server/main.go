@@ -126,7 +126,7 @@ func main() {
 	e.GET("/new_contest", createContest)
 	e.GET("/get", getLogEntry)
 
-	e.GET("/compare/alp", alpCompare)
+	e.GET("/parsed/alp/:id", parsedAlp)
 
 	e.Static("/log", "log")
 
@@ -188,52 +188,27 @@ func getLogEntry(c echo.Context) error {
 	return c.JSON(http.StatusOK, entry)
 }
 
-func alpCompare(c echo.Context) error {
-	cmp1Id := c.QueryParam("cmp1")
-	cmp2Id := c.QueryParam("cmp2")
-	if cmp1Id == "" || cmp2Id == "" {
-		return echo.ErrBadRequest
-	}
+func parsedAlp(c echo.Context) error {
+	id := c.Param("id")
 
-	var cmp1AlpPath, cmp2AlpPath string
-	err := db.QueryRow("SELECT access_log_path FROM entry WHERE id = $1", cmp1Id).Scan(&cmp1AlpPath)
-	if err != nil {
-		return echo.ErrNotFound
-	}
-	err = db.QueryRow("SELECT access_log_path FROM entry WHERE id = $1", cmp2Id).Scan(&cmp2AlpPath)
+	var alpPath string
+	err := db.QueryRow("SELECT access_log_path FROM entry WHERE id = $1", id).Scan(&alpPath)
 	if err != nil {
 		return echo.ErrNotFound
 	}
 
 	// FIXME: do not hardcode /log path
-	cmp1Alp, err := ioutil.ReadFile("log/" + cmp1AlpPath)
-	if err != nil {
-		c.Logger().Error(err)
-		return echo.ErrInternalServerError
-	}
-	cmp2Alp, err := ioutil.ReadFile("log/" + cmp2AlpPath)
+	alpString, err := ioutil.ReadFile("log/" + alpPath)
 	if err != nil {
 		c.Logger().Error(err)
 		return echo.ErrInternalServerError
 	}
 
-	alp1, err := parser.ParseAlpData(string(cmp1Alp))
-	if err != nil {
-		c.Logger().Error(err)
-		return echo.ErrInternalServerError
-	}
-	alp2, err := parser.ParseAlpData(string(cmp2Alp))
+	alp, err := parser.ParseAlpData(string(alpString))
 	if err != nil {
 		c.Logger().Error(err)
 		return echo.ErrInternalServerError
 	}
 
-	var reply struct {
-		Cmp1Raw parser.AlpData `json:"cmp1_raw"`
-		Cmp2Raw parser.AlpData `json:"cmp2_raw"`
-	}
-	reply.Cmp1Raw = alp1
-	reply.Cmp2Raw = alp2
-
-	return c.JSON(http.StatusOK, reply)
+	return c.JSON(http.StatusOK, alp)
 }
