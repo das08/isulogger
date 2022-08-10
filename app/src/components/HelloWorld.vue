@@ -59,6 +59,10 @@
           text: 'logs',
           href: '/logs',
         },
+        {
+          text: 'create contest',
+          href: '/create_contest',
+        },
       ],
     }),
   }

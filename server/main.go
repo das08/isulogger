@@ -53,7 +53,7 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 
 	var id int
-	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score) VALUES($1,$2,$3) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score).Scan(&id)
+	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score, message) VALUES($1,$2,$3,$4) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score, entry.Message).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
@@ -64,13 +64,9 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 }
 
-func insertContest(contest *Contest) (bool, string) {
-	if contest.ContestID == 0 {
-		return false, ""
-	}
-
+func insertContest(contestName string) (bool, string) {
 	var id int
-	err := db.QueryRow("INSERT INTO contest(contest_id, contest_name) VALUES($1,$2) RETURNING contest_id", contest.ContestID, contest.ContestName).Scan(&id)
+	err := db.QueryRow("INSERT INTO contest(contest_name) VALUES($1) RETURNING contest_id", contestName).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create contest failed: ", err)
 	}
@@ -140,7 +136,7 @@ func main() {
 	e.GET("/", hello)
 
 	e.GET("/new_log", createLogEntry)
-	e.GET("/new_contest", createContest)
+	e.POST("/new_contest", createContest)
 	e.GET("/get", getLogEntry)
 	e.GET("/get_contest", getContest)
 
@@ -154,10 +150,24 @@ func hello(c echo.Context) error {
 }
 
 func createLogEntry(c echo.Context) error {
+	_contestID := c.QueryParam("contest_id")
+	_score := c.QueryParam("score")
+	message := c.QueryParam("message")
+
+	contestID, err := strconv.Atoi(_contestID)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid contest_id")
+	}
+	score, err := strconv.Atoi(_score)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid score")
+	}
+
 	entry := LogEntry{}
-	entry.ContestID = 1
+	entry.ContestID = contestID
 	entry.Timestamp = time.Now()
-	entry.Score = 777
+	entry.Score = score
+	entry.Message = message
 
 	if ok, id := insertLogEntry(&entry); !ok {
 		return echo.ErrInternalServerError
@@ -167,18 +177,21 @@ func createLogEntry(c echo.Context) error {
 }
 
 func createContest(c echo.Context) error {
-	contestID := c.QueryParam("contest_id")
-	contestName := c.QueryParam("contest_name")
-
-	contest := Contest{}
-	contestIDInt, err := strconv.Atoi(contestID)
-	if err != nil {
+	type postData struct {
+		ContestName string `json:"contest_name"`
+	}
+	data := postData{}
+	if err := c.Bind(&data); err != nil {
 		return echo.ErrInternalServerError
 	}
-	contest.ContestID = contestIDInt
-	contest.ContestName = contestName
 
-	if ok, id := insertContest(&contest); !ok {
+	fmt.Println("contestname: ", data.ContestName)
+
+	if data.ContestName == "" {
+		return echo.ErrBadRequest
+	}
+
+	if ok, id := insertContest(data.ContestName); !ok {
 		return echo.ErrInternalServerError
 	} else {
 		return c.JSON(http.StatusOK, id)

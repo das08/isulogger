@@ -3,7 +3,7 @@ CREATE DATABASE isulogger;
 \c isulogger
 
 CREATE TABLE contest (
-    contest_id int NOT NULL,
+    contest_id serial NOT NULL,
     contest_name varchar(255) NOT NULL default '',
     PRIMARY KEY (contest_id)
 );
@@ -19,9 +19,4 @@ CREATE TABLE entry (
     image_path text NOT NULL default '',
     PRIMARY KEY (id),
     FOREIGN KEY (contest_id) REFERENCES contest (contest_id)
-);
-
-CREATE TABLE settings (
-    selected_contest int NOT NULL default 0,
-    FOREIGN KEY (selected_contest) REFERENCES contest (contest_id)
 );
