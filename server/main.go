@@ -3,12 +3,15 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/das08/isulogger/parser"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 
 	_ "github.com/lib/pq"
 )
@@ -123,6 +126,8 @@ func main() {
 	e.GET("/new_contest", createContest)
 	e.GET("/get", getLogEntry)
 
+	e.GET("/compare/alp", alpCompare)
+
 	e.Static("/log", "log")
 
 	e.Logger.Fatal(e.Start(":8082"))
@@ -181,4 +186,54 @@ func getLogEntry(c echo.Context) error {
 	}
 	entry := selectLogEntry(contestID, orderBy)
 	return c.JSON(http.StatusOK, entry)
+}
+
+func alpCompare(c echo.Context) error {
+	cmp1Id := c.QueryParam("cmp1")
+	cmp2Id := c.QueryParam("cmp2")
+	if cmp1Id == "" || cmp2Id == "" {
+		return echo.ErrBadRequest
+	}
+
+	var cmp1AlpPath, cmp2AlpPath string
+	err := db.QueryRow("SELECT access_log_path FROM entry WHERE id = $1", cmp1Id).Scan(&cmp1AlpPath)
+	if err != nil {
+		return echo.ErrNotFound
+	}
+	err = db.QueryRow("SELECT access_log_path FROM entry WHERE id = $1", cmp2Id).Scan(&cmp2AlpPath)
+	if err != nil {
+		return echo.ErrNotFound
+	}
+
+	// FIXME: do not hardcode /log path
+	cmp1Alp, err := ioutil.ReadFile("log/" + cmp1AlpPath)
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.ErrInternalServerError
+	}
+	cmp2Alp, err := ioutil.ReadFile("log/" + cmp2AlpPath)
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.ErrInternalServerError
+	}
+
+	alp1, err := parser.ParseAlpData(string(cmp1Alp))
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.ErrInternalServerError
+	}
+	alp2, err := parser.ParseAlpData(string(cmp2Alp))
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.ErrInternalServerError
+	}
+
+	var reply struct {
+		Cmp1Raw parser.AlpData `json:"cmp1_raw"`
+		Cmp2Raw parser.AlpData `json:"cmp2_raw"`
+	}
+	reply.Cmp1Raw = alp1
+	reply.Cmp2Raw = alp2
+
+	return c.JSON(http.StatusOK, reply)
 }

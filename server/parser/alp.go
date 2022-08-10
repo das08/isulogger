@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -93,4 +94,18 @@ func ParseAlpRow(alpline string) (AlpRow, bool) {
 		}
 	}
 	return row, true
+}
+
+func SortBySumDesc(alpdata AlpData) AlpData {
+	sort.Slice(alpdata, func(i, j int) bool {
+		return alpdata[i].Sum > alpdata[j].Sum
+	})
+	return alpdata
+}
+
+func SortByAvgDesc(alpdata AlpData) AlpData {
+	sort.Slice(alpdata, func(i, j int) bool {
+		return alpdata[i].Avg > alpdata[j].Avg
+	})
+	return alpdata
 }
