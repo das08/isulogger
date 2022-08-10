@@ -1,7 +1,7 @@
 <template>
   <v-card>
     <v-card-title>
-      <v-container fluid>
+      <v-container fluid class="headline">
         <v-row align="center">
           <v-col
               class="d-flex"
@@ -9,17 +9,19 @@
               sm="6"
           >
             <v-select
+                v-model="selected_contest"
+                @change="onContestSelect"
                 :items="contests"
                 item-text="contest_name"
                 item-value="contest_id"
-                label="Outlined style"
+                label="選択中のコンテスト"
                 outlined
             ></v-select>
           </v-col>
         </v-row>
       </v-container>
 
-      <span class="headline">ISUCON12本選</span>
+<!--      <span class="headline">ISUCON12本選</span>-->
     </v-card-title>
     <v-data-table
         :headers="headers"
@@ -109,6 +111,7 @@ export default {
     return {
       loading: false,
       contests: [],
+      selected_contest: null,
       headers: [
         {
           text: 'Timestamp',
@@ -198,6 +201,11 @@ export default {
           .catch((err) => alert(err))
     },
 
+    onContestSelect(contest) {
+      this.selected_contest = contest;
+      sessionStorage.setItem("contest_id", JSON.stringify(contest));
+    },
+
     compareScore(index) {
       let maxScore = this.entries.reduce((a,b)=>a.score>b.score?a:b);
       if (this.entries[index].score === maxScore.score) {
@@ -222,6 +230,9 @@ export default {
   },
 
   mounted() {
+    if(Object.prototype.hasOwnProperty.call(sessionStorage, "contest_id")) {
+      this.selected_contest = JSON.parse(sessionStorage.getItem("contest_id"));
+    }
     this.getContest();
     this.getLogEntry();
   },
