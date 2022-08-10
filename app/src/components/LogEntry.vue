@@ -136,7 +136,7 @@ export default defineComponent({
      */
     const doSearch = (offset, limit, order, sort) => {
       table.isLoading = true;
-      let url = "http://localhost:8082/get?isucon_id=1";
+      let url = "http://localhost:8082/get?isucon_id=1&sort=" + sort;
       axios.get(url)
           .then((response) => {
             console.log(response.data);

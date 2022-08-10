@@ -59,9 +59,13 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 }
 
-func selectLogEntry(isuconID int) []LogEntry {
+func selectLogEntry(isuconID int, orderBy string) []LogEntry {
 	var entry []LogEntry
-	rows, err := db.Query("SELECT * FROM entry WHERE isucon_id = $1", isuconID)
+	query := "SELECT * FROM entry WHERE isucon_id = $1 ORDER BY timestamp asc"
+	if orderBy == "desc" {
+		query = "SELECT * FROM entry WHERE isucon_id = $1 ORDER BY timestamp desc"
+	}
+	rows, err := db.Query(query, isuconID)
 	if err != nil {
 		fmt.Println("Error: Get entry failed: ", err)
 	}
@@ -118,13 +122,19 @@ func createLogEntry(c echo.Context) error {
 
 func getLogEntry(c echo.Context) error {
 	isuconIDRaw := c.QueryParam("isucon_id")
+	sortRaw := c.QueryParam("sort")
+	orderBy := "desc"
 	if isuconIDRaw == "" {
 		return echo.ErrBadRequest
 	}
+	if sortRaw == "asc" {
+		orderBy = "asc"
+	}
+
 	isuconID, err := strconv.Atoi(isuconIDRaw)
 	if err != nil {
 		return echo.ErrBadRequest
 	}
-	entry := selectLogEntry(isuconID)
+	entry := selectLogEntry(isuconID, orderBy)
 	return c.JSON(http.StatusOK, entry)
 }
