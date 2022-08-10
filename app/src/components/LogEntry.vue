@@ -119,6 +119,11 @@ export default {
             dataType: "json",
           })
           .then((response) => {
+            if (response.data === null) {
+              this.entries = [];
+              this.loading = false;
+              return;
+            }
             console.log(response.data);
             for (let i = 0; i < response.data.length; i++) {
               response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
