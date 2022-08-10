@@ -1,7 +1,7 @@
 version: "3.8"
 
 services:
-  isulogger-app:
+  isulogger-server:
       container_name: isulogger-server
       build:
         context: ./server
