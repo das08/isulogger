@@ -134,10 +134,13 @@ export default {
     }
   },
   methods: {
-    getLogEntry() {
+    getLogEntry(contestID) {
+      if (contestID === undefined) {
+        return;
+      }
       this.loading = true;
       return axios
-          .get("http://localhost:8082/get?contest_id=1", {
+          .get("http://localhost:8082/get?contest_id="+contestID, {
             dataType: "json",
           })
           .then((response) => {
@@ -201,9 +204,10 @@ export default {
           .catch((err) => alert(err))
     },
 
-    onContestSelect(contest) {
-      this.selected_contest = contest;
-      sessionStorage.setItem("contest_id", JSON.stringify(contest));
+    onContestSelect(contestID) {
+      this.selected_contest = contestID;
+      sessionStorage.setItem("contest_id", contestID);
+      this.getLogEntry(contestID);
     },
 
     compareScore(index) {
@@ -232,9 +236,10 @@ export default {
   mounted() {
     if(Object.prototype.hasOwnProperty.call(sessionStorage, "contest_id")) {
       this.selected_contest = JSON.parse(sessionStorage.getItem("contest_id"));
+      console.log("mounted",this.selected_contest);
+      this.getLogEntry(this.selected_contest);
     }
     this.getContest();
-    this.getLogEntry();
   },
 }
 
