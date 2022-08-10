@@ -248,11 +248,11 @@ function convertTimestamp(timestamp) {
   let parsed = Date.parse(timestamp);
   let date = new Date(parsed);
   var year = date.getFullYear();
-  var month = date.getMonth();
+  var month = date.getMonth() + 1;
   var day = date.getDate();
-  var hour = date.getHours();
-  var min = date.getMinutes();
-  var sec = date.getSeconds();
+  var hour = ('0'+date.getHours()).slice(-2);
+  var min = ('0'+date.getMinutes()).slice(-2);
+  var sec = ('0'+date.getSeconds()).slice(-2);
   return year + "/" + month + "/" + day + " " + hour + ":" + min + ":" + sec;
 }
 </script>
