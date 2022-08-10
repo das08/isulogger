@@ -1,26 +1,29 @@
 <template>
   <v-container>
+    <v-alert
+        v-model="success"
+        dense
+        text
+        type="success"
+    >
+      コンテストを作成しました!
+    </v-alert>
+    <v-alert
+        v-model="failure"
+        dense
+        text
+        type="error"
+    >
+      コンテストを作成できませんでした
+    </v-alert>
   <form>
     <v-text-field
-        v-model="name"
+        v-model="contest_name"
         :error-messages="nameErrors"
-        :counter="10"
-        label="Name"
+        :counter="20"
+        label="コンテスト名"
         required
     ></v-text-field>
-    <v-text-field
-        v-model="email"
-        :error-messages="emailErrors"
-        label="E-mail"
-        required
-    ></v-text-field>
-    <v-select
-        v-model="select"
-        :items="items"
-        :error-messages="selectErrors"
-        label="Item"
-        required
-    ></v-select>
 
     <v-btn
         class="mr-4"
@@ -36,42 +39,42 @@
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   data: () => ({
-    name: '',
-    email: '',
-    select: null,
-    items: [
-      'Item 1',
-      'Item 2',
-      'Item 3',
-      'Item 4',
-    ],
-    checkbox: false,
+    contest_name: '',
+    success: false,
+    failure: false,
   }),
   computed: {
-    checkboxErrors () {
-      return []
-    },
-    selectErrors () {
-      return []
-    },
     nameErrors () {
-      return []
-    },
-    emailErrors () {
+      if (this.contest_name.length < 3) {
+        return ['コンテスト名は3文字以上です。']
+      }
       return []
     },
   },
   methods: {
     submit () {
-
+      console.log("submit", this.contest_name);
+      axios.post("http://localhost:8082/new_contest", {
+        contest_name: this.contest_name,
+      })
+          .then((response) => {
+            console.log(response.data);
+            this.contest_name = '';
+            this.success = true;
+            this.failure = false;
+          })
+          .catch((error) => {
+            console.log(error);
+            this.success = false;
+            this.failure = true;
+          });
     },
     clear () {
-      this.name = ''
-      this.email = ''
-      this.select = null
-      this.checkbox = false
+      this.contest_name = ''
     },
   },
 }
