@@ -19,9 +19,14 @@ var (
 	PostgresPass = os.Getenv("POSTGRES_PASSWORD")
 )
 
+type Contest struct {
+	ContestID   int    `json:"contest_id" db:"contest_id"`
+	ContestName string `json:"contest_name" db:"contest_name"`
+}
+
 type LogEntry struct {
 	ID            int       `json:"id" db:"id"`
-	IsuconID      int       `json:"isucon_id" db:"isucon_id"`
+	ContestID     int       `json:"contest_id" db:"contest_id"`
 	Timestamp     time.Time `json:"timestamp" db:"timestamp"`
 	Score         int       `json:"score" db:"score"`
 	Message       string    `json:"message" db:"message"`
@@ -40,7 +45,7 @@ func initializeDB() *sql.DB {
 
 // Add a new log entry to the database
 func insertLogEntry(entry *LogEntry) (bool, string) {
-	if entry.IsuconID == 0 {
+	if entry.ContestID == 0 {
 		return false, ""
 	}
 	if entry.Timestamp.IsZero() {
@@ -48,7 +53,7 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 
 	var id int
-	err := db.QueryRow("INSERT INTO entry(isucon_id, timestamp, score) VALUES($1,$2,$3) RETURNING id", entry.IsuconID, entry.Timestamp, entry.Score).Scan(&id)
+	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score) VALUES($1,$2,$3) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
@@ -59,13 +64,30 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 }
 
-func selectLogEntry(isuconID int, orderBy string) []LogEntry {
-	var entry []LogEntry
-	query := "SELECT * FROM entry WHERE isucon_id = $1 ORDER BY timestamp asc"
-	if orderBy == "desc" {
-		query = "SELECT * FROM entry WHERE isucon_id = $1 ORDER BY timestamp desc"
+func insertContest(contest *Contest) (bool, string) {
+	if contest.ContestID == 0 {
+		return false, ""
 	}
-	rows, err := db.Query(query, isuconID)
+
+	var id int
+	err := db.QueryRow("INSERT INTO contest(contest_id, contest_name) VALUES($1,$2) RETURNING contest_id", contest.ContestID, contest.ContestName).Scan(&id)
+	if err != nil {
+		fmt.Println("Error: Create contest failed: ", err)
+	}
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, ""
+	}
+}
+
+func selectLogEntry(ContestID int, orderBy string) []LogEntry {
+	var entry []LogEntry
+	query := "SELECT * FROM entry WHERE contest_id = $1 ORDER BY timestamp asc"
+	if orderBy == "desc" {
+		query = "SELECT * FROM entry WHERE contest_id = $1 ORDER BY timestamp desc"
+	}
+	rows, err := db.Query(query, ContestID)
 	if err != nil {
 		fmt.Println("Error: Get entry failed: ", err)
 	}
@@ -73,7 +95,7 @@ func selectLogEntry(isuconID int, orderBy string) []LogEntry {
 
 	for rows.Next() {
 		var e LogEntry
-		err := rows.Scan(&e.ID, &e.IsuconID, &e.Timestamp, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
+		err := rows.Scan(&e.ID, &e.ContestID, &e.Timestamp, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
 		if err != nil {
 			fmt.Println("Error: Scan entry failed: ", err)
 		} else {
@@ -97,7 +119,8 @@ func main() {
 
 	e.GET("/", hello)
 
-	e.GET("/new", createLogEntry)
+	e.GET("/new_log", createLogEntry)
+	e.GET("/new_contest", createContest)
 	e.GET("/get", getLogEntry)
 
 	e.Static("/log", "log")
@@ -111,7 +134,7 @@ func hello(c echo.Context) error {
 
 func createLogEntry(c echo.Context) error {
 	entry := LogEntry{}
-	entry.IsuconID = 1
+	entry.ContestID = 1
 	entry.Timestamp = time.Now()
 	entry.Score = 777
 
@@ -122,21 +145,40 @@ func createLogEntry(c echo.Context) error {
 	}
 }
 
+func createContest(c echo.Context) error {
+	contestID := c.QueryParam("contest_id")
+	contestName := c.QueryParam("contest_name")
+
+	contest := Contest{}
+	contestIDInt, err := strconv.Atoi(contestID)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	contest.ContestID = contestIDInt
+	contest.ContestName = contestName
+
+	if ok, id := insertContest(&contest); !ok {
+		return echo.ErrInternalServerError
+	} else {
+		return c.JSON(http.StatusOK, id)
+	}
+}
+
 func getLogEntry(c echo.Context) error {
-	isuconIDRaw := c.QueryParam("isucon_id")
+	contestIDRaw := c.QueryParam("contest_id")
 	sortRaw := c.QueryParam("sort")
 	orderBy := "desc"
-	if isuconIDRaw == "" {
+	if contestIDRaw == "" {
 		return echo.ErrBadRequest
 	}
 	if sortRaw == "asc" {
 		orderBy = "asc"
 	}
 
-	isuconID, err := strconv.Atoi(isuconIDRaw)
+	contestID, err := strconv.Atoi(contestIDRaw)
 	if err != nil {
 		return echo.ErrBadRequest
 	}
-	entry := selectLogEntry(isuconID, orderBy)
+	entry := selectLogEntry(contestID, orderBy)
 	return c.JSON(http.StatusOK, entry)
 }

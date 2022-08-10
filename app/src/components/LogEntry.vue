@@ -115,7 +115,7 @@ export default {
     getData() {
       this.loading = true;
       return axios
-          .get("http://localhost:8082/get?isucon_id=1", {
+          .get("http://localhost:8082/get?contest_id=1", {
             dataType: "json",
           })
           .then((response) => {
