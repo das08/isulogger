@@ -1,6 +1,10 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import Vue from 'vue'
+import VueRouter from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
-import Log from './components/LogEntry.vue'
+import LogEntry from './components/LogEntry.vue'
+import LogTest from './components/LogTest.vue'
+
+Vue.use(VueRouter)
 
 const routes = [
     {
@@ -11,13 +15,16 @@ const routes = [
     {
         path: '/logs',
         name: 'Logs',
-        component: Log
+        component: LogEntry
+    },
+    {
+        path: '/logs2',
+        name: 'Logs',
+        component: LogTest
     }
 ]
 
-const router = createRouter({
-    history: createWebHistory(process.env.BASE_URL),
-    routes
+export default new VueRouter({
+    mode: 'history',
+    routes: routes
 })
-
-export default router

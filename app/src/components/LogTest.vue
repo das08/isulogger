@@ -63,7 +63,10 @@ export default {
           })
           .then((response) => {
             console.log(response.data);
-            this.entries = response.data;
+            for (let i = 0; i < response.data.length; i++) {
+              response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
+              this.entries.push(response.data[i]);
+            }
             this.loading = false;
           })
           .catch((err) => alert(err));
@@ -76,5 +79,18 @@ export default {
   mounted() {
     this.getData();
   },
+}
+
+// convert timestamp to date
+function convertTimestamp(timestamp) {
+  let parsed = Date.parse(timestamp);
+  let date = new Date(parsed);
+  var year = date.getFullYear();
+  var month = date.getMonth();
+  var day = date.getDate();
+  var hour = date.getHours();
+  var min = date.getMinutes();
+  var sec = date.getSeconds();
+  return year + "/" + month + "/" + day + " " + hour + ":" + min + ":" + sec;
 }
 </script>
