@@ -29,10 +29,10 @@
         class="mr-4"
         @click="submit"
     >
-      submit
+      作成する
     </v-btn>
     <v-btn @click="clear">
-      clear
+      リセット
     </v-btn>
   </form>
   </v-container>
@@ -50,7 +50,7 @@ export default {
   computed: {
     nameErrors () {
       if (this.contest_name.length < 3) {
-        return ['コンテスト名は3文字以上です。']
+        return ['コンテスト名は3文字以上です(適当)']
       }
       return []
     },
