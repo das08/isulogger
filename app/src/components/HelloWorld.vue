@@ -1,5 +1,5 @@
 <template>
-  <img alt="Vue logo" src="../assets/logo.png">
+  <img alt="Vue logo" :src="require('../assets/logo.png')">
   <div class="hello">
     <p>Today's server message</p>
     <p>{{message}}</p>
@@ -18,27 +18,9 @@ export default {
     }
   },
   mounted() {
-    axios.get("/").then(message => {
+    axios.get("http://localhost:8082/").then(message => {
       this.message = message.data;
     });
   }
 }
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
