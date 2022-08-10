@@ -1,19 +1,11 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
-  <LogEntry/>
+  <div id="app">
+    <router-view></router-view>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-import LogEntry from "@/components/LogEntry";
-
-export default {
-  name: 'App',
-  components: {
-    HelloWorld, LogEntry
-  }
-}
+export default {}
 </script>
 
 <style>

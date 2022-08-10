@@ -1,7 +1,9 @@
 <template>
+  <img alt="Vue logo" src="../assets/logo.png">
   <div class="hello">
     <p>Today's server message</p>
     <p>{{message}}</p>
+    <a href="/logs">View Logs</a>
   </div>
 </template>
 

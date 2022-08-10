@@ -17,6 +17,7 @@
 
 <script>
 import { defineComponent, reactive } from "vue";
+import { useRouter } from 'vue-router'
 import TableLite from "vue3-table-lite";
 import axios from "axios";
 
@@ -102,11 +103,9 @@ export default defineComponent({
           label: "Slow Log",
           field: "slow_log",
           width: "10%",
-          display: function (row) {
+          display: function () {
             return (
-                '<button type="button" data-id="' +
-                row.id +
-                '" class="is-rows-el quick-btn">Button</button>'
+                '<button @click="moveNextScreen">next</button>'
             );
           },
         },
@@ -178,11 +177,19 @@ export default defineComponent({
     // First get data
     doSearch(0, 10, "timestamp", "desc");
 
+    const router = useRouter()
+
+    const moveNextScreen = () => {
+      router.push('/second')
+    }
+
+
     return {
       table,
       doSearch,
       tableLoadingFinish,
       updateCheckedRows,
+      moveNextScreen,
     };
   },
 });
