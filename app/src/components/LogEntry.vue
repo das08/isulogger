@@ -1,7 +1,27 @@
 <template>
   <v-card>
     <v-card-title>
-      <span class="headline">ISUCON12本選</span>
+      <v-container fluid class="headline">
+        <v-row align="center">
+          <v-col
+              class="d-flex"
+              cols="12"
+              sm="6"
+          >
+            <v-select
+                v-model="selected_contest"
+                @change="onContestSelect"
+                :items="contests"
+                item-text="contest_name"
+                item-value="contest_id"
+                label="選択中のコンテスト"
+                outlined
+            ></v-select>
+          </v-col>
+        </v-row>
+      </v-container>
+
+<!--      <span class="headline">ISUCON12本選</span>-->
     </v-card-title>
     <v-data-table
         :headers="headers"
@@ -90,6 +110,8 @@ export default {
   data () {
     return {
       loading: false,
+      contests: [],
+      selected_contest: null,
       headers: [
         {
           text: 'Timestamp',
@@ -112,10 +134,13 @@ export default {
     }
   },
   methods: {
-    getData() {
+    getLogEntry(contestID) {
+      if (contestID === undefined) {
+        return;
+      }
       this.loading = true;
       return axios
-          .get("http://localhost:8082/get?contest_id=1", {
+          .get("http://localhost:8082/get?contest_id="+contestID, {
             dataType: "json",
           })
           .then((response) => {
@@ -130,6 +155,22 @@ export default {
               this.entries.push(response.data[i]);
             }
             this.loading = false;
+          })
+          .catch((err) => alert(err));
+    },
+
+    getContest() {
+      return axios
+          .get("http://localhost:8082/get_contest", {
+            dataType: "json",
+          })
+          .then((response) => {
+            console.log(response);
+            if (response.data === null) {
+              this.contests = [];
+              return;
+            }
+            this.contests = response.data;
           })
           .catch((err) => alert(err));
     },
@@ -163,6 +204,12 @@ export default {
           .catch((err) => alert(err))
     },
 
+    onContestSelect(contestID) {
+      this.selected_contest = contestID;
+      sessionStorage.setItem("contest_id", contestID);
+      this.getLogEntry(contestID);
+    },
+
     compareScore(index) {
       let maxScore = this.entries.reduce((a,b)=>a.score>b.score?a:b);
       if (this.entries[index].score === maxScore.score) {
@@ -187,7 +234,12 @@ export default {
   },
 
   mounted() {
-    this.getData();
+    if(Object.prototype.hasOwnProperty.call(sessionStorage, "contest_id")) {
+      this.selected_contest = JSON.parse(sessionStorage.getItem("contest_id"));
+      console.log("mounted",this.selected_contest);
+      this.getLogEntry(this.selected_contest);
+    }
+    this.getContest();
   },
 }
 
