@@ -24,6 +24,14 @@
         <strong>{{ item.score }}</strong>
       </template>
 
+      <template v-slot:[`item.compare1`]="{ item }">
+        <input type="radio" name="compare1" @value="item.id" @click="chooseCompare(1, item.id)">
+      </template>
+
+      <template v-slot:[`item.compare2`]="{ item }">
+        <input type="radio" name="compare2" @value="item.id" @click="chooseCompare(2, item.id)">
+      </template>
+
       <template v-slot:[`item.access_log`]="{ item }">
         <template v-if="item.access_log_path === ''">
           <v-btn class="mx-2" fab small color="primary" disabled>
@@ -98,9 +106,11 @@ export default {
           value: 'timestamp',
           width: '15%',
         },
-        { text: 'Best', value: 'max_score', width: '10%', align: 'end'},
+        { text: 'Best', value: 'max_score', width: '10%', align: 'end' },
         { text: 'Score', value: 'score', width: '10%' },
-        { text: 'Message', value: 'message', width: '25%' },
+        { text: 'Message', value: 'message', width: '15%' },
+        { text: 'Cmp 1', value: 'compare1', width: '5%' },
+        { text: 'Cmp 2', value: 'compare2', width: '5%' },
         { text: 'Access Log', value: 'access_log', width: '10%' },
         { text: 'Slow Log', value: 'slow_log', width: '10%' },
         { text: 'Status', value: 'status', width: '20%' },
@@ -109,6 +119,10 @@ export default {
       dialog: false,
       log_type: "",
       log_contents: [],
+      compare: {
+        compare1: null,
+        compare2: null,
+      },
     }
   },
   methods: {
@@ -183,7 +197,15 @@ export default {
 
     maxScore() {
       return this.entries.reduce((a,b)=>a.score>b.score?a:b).score;
-    }
+    },
+
+    chooseCompare(compareIndex, id) {
+      if (compareIndex === 1) {
+        this.compare.compare1 = id;
+      } else if (compareIndex === 2) {
+        this.compare.compare2 = id;
+      }
+    },
   },
 
   mounted() {
