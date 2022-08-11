@@ -121,6 +121,20 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	return entry
 }
 
+func hasLatestEntry(ContestID int, minutesAgo int) bool {
+	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = $1 AND timestamp >= $2", ContestID, t).Scan(&count)
+	if err != nil {
+		fmt.Println("Error: Get entry failed: ", err)
+	}
+	if count > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func main() {
 	// Initialize DB connection
 	db = initializeDB()
@@ -139,6 +153,7 @@ func main() {
 	e.POST("/contest", createContest)
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
+	e.GET("/check/entry", checkLatestEntry)
 
 	e.Static("/log", "log")
 
@@ -221,4 +236,25 @@ func getLogEntry(c echo.Context) error {
 func getContest(c echo.Context) error {
 	contest := selectContest()
 	return c.JSON(http.StatusOK, contest)
+}
+
+func checkLatestEntry(c echo.Context) error {
+	contestIDRaw := c.QueryParam("contest_id")
+	minutesAgoRaw := c.QueryParam("minutes_ago")
+	if contestIDRaw == "" || minutesAgoRaw == "" {
+		return echo.ErrBadRequest
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+	minutesAgo, err := strconv.Atoi(minutesAgoRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Minutes ago is invalid")
+	}
+	if hasLatestEntry(contestID, minutesAgo) {
+		return c.String(http.StatusOK, "true")
+	} else {
+		return c.String(http.StatusOK, "false")
+	}
 }
