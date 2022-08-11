@@ -1,8 +1,25 @@
 <template>
   <v-card>
     <v-card-title>
-      <span class="headline">ISUCON12本選</span>
-      <span class="headline-right">
+      <v-container fluid class="headline">
+        <v-row align="center">
+          <v-col
+              class="d-flex"
+              cols="12"
+              sm="6"
+          >
+            <v-select
+                v-model="selected_contest"
+                @change="onContestSelect"
+                :items="contests"
+                item-text="contest_name"
+                item-value="contest_id"
+                label="選択中のコンテスト"
+                outlined
+            ></v-select>
+          </v-col>
+        </v-row>
+        <span class="headline-right">
         <v-btn
           color="primary"
           dark
@@ -22,6 +39,9 @@
           diff slowlog
         </v-btn>
       </span>
+      </v-container>
+
+<!--      <span class="headline">ISUCON12本選</span>-->
     </v-card-title>
     <v-data-table
         :headers="headers"
@@ -118,6 +138,8 @@ export default {
   data () {
     return {
       loading: false,
+      contests: [],
+      selected_contest: null,
       headers: [
         {
           text: 'Timestamp',
@@ -151,10 +173,13 @@ export default {
     }
   },
   methods: {
-    getData() {
+    getLogEntry(contestID) {
+      if (contestID === undefined) {
+        return;
+      }
       this.loading = true;
       return axios
-          .get("/get?contest_id=1", {
+          .get("/get?contest_id="+contestID, {
             dataType: "json",
           })
           .then((response) => {
@@ -169,6 +194,22 @@ export default {
               this.entries.push(response.data[i]);
             }
             this.loading = false;
+          })
+          .catch((err) => alert(err));
+    },
+
+    getContest() {
+      return axios
+          .get("http://localhost:8082/get_contest", {
+            dataType: "json",
+          })
+          .then((response) => {
+            console.log(response);
+            if (response.data === null) {
+              this.contests = [];
+              return;
+            }
+            this.contests = response.data;
           })
           .catch((err) => alert(err));
     },
@@ -200,6 +241,12 @@ export default {
             this.dialog = true;
           })
           .catch((err) => alert(err))
+    },
+
+    onContestSelect(contestID) {
+      this.selected_contest = contestID;
+      localStorage.setItem("contest_id", contestID);
+      this.getLogEntry(contestID);
     },
 
     compareScore(index) {
@@ -241,7 +288,12 @@ export default {
   },
 
   mounted() {
-    this.getData();
+    if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
+      this.selected_contest = JSON.parse(localStorage.getItem("contest_id"));
+      console.log("mounted",this.selected_contest);
+      this.getLogEntry(this.selected_contest);
+    }
+    this.getContest();
   },
 }
 
@@ -250,11 +302,11 @@ function convertTimestamp(timestamp) {
   let parsed = Date.parse(timestamp);
   let date = new Date(parsed);
   var year = date.getFullYear();
-  var month = date.getMonth();
+  var month = date.getMonth() + 1;
   var day = date.getDate();
-  var hour = date.getHours();
-  var min = date.getMinutes();
-  var sec = date.getSeconds();
+  var hour = ('0'+date.getHours()).slice(-2);
+  var min = ('0'+date.getMinutes()).slice(-2);
+  var sec = ('0'+date.getSeconds()).slice(-2);
   return year + "/" + month + "/" + day + " " + hour + ":" + min + ":" + sec;
 }
 </script>

@@ -50,7 +50,7 @@ func ParseAlpData(alpstring string) (AlpData, error) {
 	for _, line := range lines[3:] {
 		row, ok := ParseAlpRow(line)
 		if !ok {
-			errors.New("failed to parse")
+			return AlpData{}, errors.New("failed to parse")
 		}
 		alpdata = append(alpdata, row)
 	}
