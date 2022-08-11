@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -121,10 +122,10 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	return entry
 }
 
-func hasLatestEntry(ContestID int, minutesAgo int) bool {
+func hasLatestEntry(contestID int, minutesAgo int) bool {
 	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = $1 AND timestamp >= $2", ContestID, t).Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = $1 AND timestamp >= $2", contestID, t).Scan(&count)
 	if err != nil {
 		fmt.Println("Error: Get entry failed: ", err)
 	}
@@ -132,6 +133,25 @@ func hasLatestEntry(ContestID int, minutesAgo int) bool {
 		return true
 	} else {
 		return false
+	}
+}
+
+func insertAccessLogEntry(contestID, minutesAgo int, accessLogPath string) (bool, string) {
+	if !hasLatestEntry(contestID, minutesAgo) {
+		return false, "Cannot find updatable log entry"
+	}
+
+	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
+
+	var id int
+	err := db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", accessLogPath, t, contestID).Scan(&id)
+	if err != nil {
+		fmt.Println("Error: Create entry failed: ", err)
+	}
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, "Failed to update entry"
 	}
 }
 
@@ -149,8 +169,10 @@ func main() {
 
 	e.GET("/", hello)
 
-	e.POST("/entry", createLogEntry)
 	e.POST("/contest", createContest)
+	e.POST("/entry", createLogEntry)
+	e.POST("/entry/:contest_id/accesslog", createAccessLogEntry)
+
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
 	e.GET("/check/entry", checkLatestEntry)
@@ -209,6 +231,49 @@ func createContest(c echo.Context) error {
 
 	if ok, id := insertContest(data.ContestName); !ok {
 		return echo.ErrInternalServerError
+	} else {
+		return c.JSON(http.StatusOK, id)
+	}
+}
+
+func createAccessLogEntry(c echo.Context) error {
+	contestIDRaw := c.Param("contest_id")
+	if contestIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+	file, err := c.FormFile("accesslog")
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	minutesAgoRaw := c.FormValue("minutes_ago")
+	if minutesAgoRaw == "" {
+		return c.String(http.StatusBadRequest, "Minutes Ago is required")
+	}
+	minutesAgo, err := strconv.Atoi(minutesAgoRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Minutes Ago is invalid")
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	defer src.Close()
+	dst, err := os.Create("./log/" + file.Filename)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	defer dst.Close()
+	if _, err = io.Copy(dst, src); err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	if ok, id := insertAccessLogEntry(contestID, minutesAgo, file.Filename); !ok {
+		return c.JSON(http.StatusInternalServerError, id)
 	} else {
 		return c.JSON(http.StatusOK, id)
 	}
