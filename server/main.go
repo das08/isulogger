@@ -136,7 +136,7 @@ func hasLatestEntry(contestID int, minutesAgo int) bool {
 	}
 }
 
-func insertLogFile(contestID, minutesAgo int, logType, logPath string) (bool, string) {
+func insertLogFileByTime(contestID, minutesAgo int, logType, logPath string) (bool, string) {
 	if !hasLatestEntry(contestID, minutesAgo) {
 		return false, "Cannot find updatable log entry"
 	}
@@ -151,6 +151,27 @@ func insertLogFile(contestID, minutesAgo int, logType, logPath string) (bool, st
 
 	case "slow":
 		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, t, contestID).Scan(&id)
+	}
+
+	if err != nil {
+		fmt.Println("Error: Create entry failed: ", err)
+	}
+
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, "Failed to update entry"
+	}
+}
+
+func insertLogFileByID(contestID, entryID int, logType, logPath string) (bool, string) {
+	var id int
+	var err error
+	switch logType {
+	case "access":
+		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE contest_id = $2 AND id = $3 RETURNING id", logPath, contestID, entryID).Scan(&id)
+	case "slow":
+		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE contest_id = $2 AND id = $3 RETURNING id", logPath, contestID, entryID).Scan(&id)
 	}
 
 	if err != nil {
@@ -267,12 +288,19 @@ func uploadLogFile(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 	minutesAgoRaw := c.FormValue("minutes_ago")
-	if minutesAgoRaw == "" {
-		return c.String(http.StatusBadRequest, "Minutes Ago is required")
-	}
 	minutesAgo, err := strconv.Atoi(minutesAgoRaw)
-	if err != nil {
+	if err != nil && minutesAgoRaw != "" {
 		return c.String(http.StatusBadRequest, "Minutes Ago is invalid")
+	}
+
+	entryIDRaw := c.FormValue("entry_id")
+	entryID, err := strconv.Atoi(entryIDRaw)
+	if err != nil && entryIDRaw != "" {
+		return c.String(http.StatusBadRequest, "Entry ID is invalid")
+	}
+
+	if minutesAgoRaw == "" && entryIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Minutes Ago or entryID is required")
 	}
 
 	src, err := file.Open()
@@ -289,7 +317,15 @@ func uploadLogFile(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	if ok, id := insertLogFile(contestID, minutesAgo, logType, file.Filename); !ok {
+	var ok bool
+	var id string
+	if entryID > 0 {
+		ok, id = insertLogFileByID(contestID, entryID, logType, file.Filename)
+	} else {
+		ok, id = insertLogFileByTime(contestID, minutesAgo, logType, file.Filename)
+	}
+
+	if !ok {
 		return c.JSON(http.StatusInternalServerError, id)
 	} else {
 		return c.JSON(http.StatusOK, id)
