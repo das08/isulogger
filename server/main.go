@@ -136,21 +136,15 @@ func hasLatestEntry(contestID int, minutesAgo int) bool {
 	}
 }
 
-func insertLogFileByTime(contestID, minutesAgo int, logType, logPath string) (bool, string) {
-	if !hasLatestEntry(contestID, minutesAgo) {
-		return false, "Cannot find updatable log entry"
-	}
-
-	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
-
+func insertLogFileToLatest(contestID int, logType, logPath string) (bool, string) {
 	var id int
 	var err error
 	switch logType {
 	case "access":
-		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, t, contestID).Scan(&id)
+		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
 
 	case "slow":
-		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, t, contestID).Scan(&id)
+		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
 	}
 
 	if err != nil {
@@ -287,20 +281,11 @@ func uploadLogFile(c echo.Context) error {
 	if err != nil {
 		return echo.ErrInternalServerError
 	}
-	minutesAgoRaw := c.FormValue("minutes_ago")
-	minutesAgo, err := strconv.Atoi(minutesAgoRaw)
-	if err != nil && minutesAgoRaw != "" {
-		return c.String(http.StatusBadRequest, "Minutes Ago is invalid")
-	}
 
 	entryIDRaw := c.FormValue("entry_id")
 	entryID, err := strconv.Atoi(entryIDRaw)
 	if err != nil && entryIDRaw != "" {
 		return c.String(http.StatusBadRequest, "Entry ID is invalid")
-	}
-
-	if minutesAgoRaw == "" && entryIDRaw == "" {
-		return c.String(http.StatusBadRequest, "Minutes Ago or entryID is required")
 	}
 
 	src, err := file.Open()
@@ -322,7 +307,7 @@ func uploadLogFile(c echo.Context) error {
 	if entryID > 0 {
 		ok, id = insertLogFileByID(contestID, entryID, logType, file.Filename)
 	} else {
-		ok, id = insertLogFileByTime(contestID, minutesAgo, logType, file.Filename)
+		ok, id = insertLogFileToLatest(contestID, logType, file.Filename)
 	}
 
 	if !ok {
