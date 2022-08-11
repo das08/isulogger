@@ -140,7 +140,7 @@ export default {
       }
       this.loading = true;
       return axios
-          .get("http://localhost:8082/get?contest_id="+contestID, {
+          .get("http://localhost:8082/entry?contest_id="+contestID, {
             dataType: "json",
           })
           .then((response) => {
@@ -161,7 +161,7 @@ export default {
 
     getContest() {
       return axios
-          .get("http://localhost:8082/get_contest", {
+          .get("http://localhost:8082/contest", {
             dataType: "json",
           })
           .then((response) => {

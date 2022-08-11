@@ -58,7 +58,7 @@ export default {
   methods: {
     submit () {
       console.log("submit", this.contest_name);
-      axios.post("http://localhost:8082/new_contest", {
+      axios.post("http://localhost:8082/contest", {
         contest_name: this.contest_name,
       })
           .then((response) => {

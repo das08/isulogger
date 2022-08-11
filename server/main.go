@@ -135,10 +135,10 @@ func main() {
 
 	e.GET("/", hello)
 
-	e.GET("/new_log", createLogEntry)
-	e.POST("/new_contest", createContest)
-	e.GET("/get", getLogEntry)
-	e.GET("/get_contest", getContest)
+	e.POST("/entry", createLogEntry)
+	e.POST("/contest", createContest)
+	e.GET("/entry", getLogEntry)
+	e.GET("/contest", getContest)
 
 	e.Static("/log", "log")
 
@@ -150,24 +150,25 @@ func hello(c echo.Context) error {
 }
 
 func createLogEntry(c echo.Context) error {
-	_contestID := c.QueryParam("contest_id")
-	_score := c.QueryParam("score")
-	message := c.QueryParam("message")
-
-	contestID, err := strconv.Atoi(_contestID)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid contest_id")
+	type postData struct {
+		ContestID int    `json:"contest_id"`
+		Score     int    `json:"score"`
+		Message   string `json:"message"`
 	}
-	score, err := strconv.Atoi(_score)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid score")
+	var p postData
+	if err := c.Bind(&p); err != nil {
+		return echo.ErrInternalServerError
+	}
+	if p.ContestID == 0 {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
 	}
 
-	entry := LogEntry{}
-	entry.ContestID = contestID
-	entry.Timestamp = time.Now()
-	entry.Score = score
-	entry.Message = message
+	entry := LogEntry{
+		ContestID: p.ContestID,
+		Timestamp: time.Now(),
+		Score:     p.Score,
+		Message:   p.Message,
+	}
 
 	if ok, id := insertLogEntry(&entry); !ok {
 		return echo.ErrInternalServerError
@@ -188,7 +189,7 @@ func createContest(c echo.Context) error {
 	fmt.Println("contestname: ", data.ContestName)
 
 	if data.ContestName == "" {
-		return echo.ErrBadRequest
+		return c.String(http.StatusBadRequest, "Contest Name is required")
 	}
 
 	if ok, id := insertContest(data.ContestName); !ok {
@@ -211,7 +212,7 @@ func getLogEntry(c echo.Context) error {
 
 	contestID, err := strconv.Atoi(contestIDRaw)
 	if err != nil {
-		return echo.ErrBadRequest
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
 	}
 	entry := selectLogEntry(contestID, orderBy)
 	return c.JSON(http.StatusOK, entry)
