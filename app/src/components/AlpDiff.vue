@@ -1,27 +1,11 @@
 <template>
   <div class="ranking-wrapper">
-    <template v-if="ranking1">
-      <v-data-table
-        :headers="headers"
-        :items="ranking1"
-        item-key="uri"
-        class="ranking-table ranking-1"
-        disable-pagination
-        disable-sort
-        hide-default-footer
-      >
-      </v-data-table>
-    </template>
-    <div>
-      <canvas id="rankingLinkCanvas"></canvas>
-      <!-- <v-icon>mdi-arrow-right-bold</v-icon> -->
-    </div>
     <template v-if="ranking2">
       <v-data-table
         :headers="headers"
-        :items="ranking2"
+        :items="rankingComparison"
         item-key="uri"
-        class="ranking-table ranking-2"
+        class="ranking-table"
         disable-pagination
         disable-sort
         hide-default-footer
@@ -43,8 +27,9 @@ function makeRanking(alp) {
     .sort((a, b) => {
       return b.avg - a.avg;
     })
-    .map((item) => {
+    .map((item, i) => {
       return {
+        ranking: i + 1,
         count: item.count,
         count100: item.count100,
         count200: item.count200,
@@ -58,6 +43,34 @@ function makeRanking(alp) {
     });
 }
 
+function makeRankingComparison(alp, baseAlp) {
+  const baseUriMap = new Map();
+  for (const item of baseAlp) {
+    baseUriMap.set(item.uri, item);
+  }
+
+  return alp.map((item) => {
+    const uri = item.uri;
+    const oldItem = baseUriMap.get(uri);
+    if (oldItem === undefined) {
+      return item;
+    }
+
+    return {
+      ranking: `${oldItem.ranking} -> ${item.ranking}`,
+      count: `${oldItem.count} -> ${item.count}`,
+      count100: `${oldItem.count100} -> ${item.count100}`,
+      count200: `${oldItem.count200} -> ${item.count200}`,
+      count300: `${oldItem.count300} -> ${item.count300}`,
+      count400: `${oldItem.count400} -> ${item.count400}`,
+      count500: `${oldItem.count500} -> ${item.count500}`,
+      uri: item.uri,
+      avg: `${oldItem.avg} -> ${item.avg}`,
+      sum: `${oldItem.sum} -> ${item.sum}`,
+    };
+  });
+}
+
 export default {
   name: "AlpDiff",
   props: {
@@ -69,6 +82,7 @@ export default {
       alp1: null,
       alp2: null,
       headers: [
+        { text: "#", value: "ranking" },
         { text: "URI", value: "uri" },
         { text: "Avg", value: "avg" },
         { text: "Sum", value: "sum" },
@@ -83,82 +97,28 @@ export default {
     ranking2() {
       return makeRanking(this.alp2);
     },
+    rankingComparison() {
+      if (this.ranking1 === null || this.ranking2 === null) {
+        return null;
+      }
+      return makeRankingComparison(this.ranking2, this.ranking1);
+    },
   },
   mounted() {
-    const pro1 = axios.get("/parsed/alp/" + this.cmp1).then((response) => {
+    axios.get("/parsed/alp/" + this.cmp1).then((response) => {
       this.alp1 = response.data;
     });
-    const pro2 = axios.get("/parsed/alp/" + this.cmp2).then((response) => {
+    axios.get("/parsed/alp/" + this.cmp2).then((response) => {
       this.alp2 = response.data;
     });
-    Promise.all([pro1, pro2]).then(() => {
-      this.initCanvas();
-      this.drawRankingLink();
-    });
   },
-  methods: {
-    initCanvas() {
-      const canvas = document.getElementById("rankingLinkCanvas");
-      // const ctx = canvas.getContext('2d');
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    },
-    drawRankingLink() {
-      const table1 = document.getElementsByClassName("ranking-1")[0];
-      const table2 = document.getElementsByClassName("ranking-2")[0];
-      const table1Map = new Map();
-      const table2Map = new Map();
-      const table1Set = new Set();
-      const table2Set = new Set();
-      table1.querySelectorAll("td").forEach((td) => {
-        const uri = td.innerText;
-        if (uri.startsWith("/")) {
-          const b = td.getBoundingClientRect();
-          const height = (b.top + b.bottom) / 2;
-          table1Map.set(uri, height);
-          table1Set.add(uri);
-        }
-      });
-      table2.querySelectorAll("td").forEach((td) => {
-        const uri = td.innerText;
-        if (uri.startsWith("/")) {
-          const b = td.getBoundingClientRect();
-          const height = (b.top + b.bottom) / 2;
-          table2Map.set(uri, height);
-          table2Set.add(uri);
-        }
-      });
-
-      const uriIntersection = new Set(
-        [...table1Set].filter((x) => table2Set.has(x))
-      );
-
-      const canvas = document.getElementById("rankingLinkCanvas");
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // ctx.fillStyle = 'red';
-      // ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "blue";
-
-      for (const uri of uriIntersection.keys()) {
-        const h1 = table1Map.get(uri);
-        const h2 = table2Map.get(uri);
-        console.log(uri, h1, h2);
-        ctx.beginPath();
-        ctx.moveTo(0, h1);
-        ctx.lineTo(canvas.width, h2);
-        ctx.stroke();
-      }
-    },
-  },
+  methods: {},
 };
 </script>
 
 <style scoped>
-.ranking-wrapper {
+/* .ranking-wrapper {
   display: grid;
   grid-template-columns: 4fr 1fr 4fr;
-}
+} */
 </style>
