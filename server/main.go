@@ -136,7 +136,7 @@ func hasLatestEntry(contestID int, minutesAgo int) bool {
 	}
 }
 
-func insertAccessLogEntry(contestID, minutesAgo int, accessLogPath string) (bool, string) {
+func insertLogFile(contestID, minutesAgo int, logType, logPath string) (bool, string) {
 	if !hasLatestEntry(contestID, minutesAgo) {
 		return false, "Cannot find updatable log entry"
 	}
@@ -144,10 +144,19 @@ func insertAccessLogEntry(contestID, minutesAgo int, accessLogPath string) (bool
 	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
 
 	var id int
-	err := db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", accessLogPath, t, contestID).Scan(&id)
+	var err error
+	switch logType {
+	case "access":
+		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, t, contestID).Scan(&id)
+
+	case "slow":
+		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE timestamp>= $2 AND id IN (SELECT id FROM entry WHERE contest_id = $3 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, t, contestID).Scan(&id)
+	}
+
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
+
 	if id > 0 {
 		return true, fmt.Sprintf("%d", id)
 	} else {
@@ -171,7 +180,7 @@ func main() {
 
 	e.POST("/contest", createContest)
 	e.POST("/entry", createLogEntry)
-	e.POST("/entry/:contest_id/accesslog", createAccessLogEntry)
+	e.POST("/entry/:contest_id/:log_type", uploadLogFile)
 
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
@@ -236,7 +245,7 @@ func createContest(c echo.Context) error {
 	}
 }
 
-func createAccessLogEntry(c echo.Context) error {
+func uploadLogFile(c echo.Context) error {
 	contestIDRaw := c.Param("contest_id")
 	if contestIDRaw == "" {
 		return c.String(http.StatusBadRequest, "Contest ID is required")
@@ -245,7 +254,15 @@ func createAccessLogEntry(c echo.Context) error {
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Contest ID is invalid")
 	}
-	file, err := c.FormFile("accesslog")
+	logType := c.Param("log_type")
+	if logType == "" {
+		return c.String(http.StatusBadRequest, "Log Type is required")
+	}
+	if logType != "access" && logType != "slow" {
+		return c.String(http.StatusBadRequest, "Log Type is invalid")
+	}
+
+	file, err := c.FormFile("log")
 	if err != nil {
 		return echo.ErrInternalServerError
 	}
@@ -272,7 +289,7 @@ func createAccessLogEntry(c echo.Context) error {
 		return echo.ErrInternalServerError
 	}
 
-	if ok, id := insertAccessLogEntry(contestID, minutesAgo, file.Filename); !ok {
+	if ok, id := insertLogFile(contestID, minutesAgo, logType, file.Filename); !ok {
 		return c.JSON(http.StatusInternalServerError, id)
 	} else {
 		return c.JSON(http.StatusOK, id)
