@@ -33,17 +33,11 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "cli-tool",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "isulogger",
+	Short: "A CLI tool for ISULOGGER",
+	Long: `A CLI tool for ISULOGGER.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+This tool is a simple command line tool for ISULOGGER.`,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -77,12 +71,13 @@ func initConfig() {
 	} else {
 		// Find home directory.
 		home, err := os.UserHomeDir()
+		fmt.Println("home", home)
 		cobra.CheckErr(err)
 
-		// Search config in home directory with name ".cli-tool" (without extension).
+		// Search config in home directory with name ".isulogger" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".cli-tool")
+		viper.SetConfigName(".isulogger")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -90,5 +85,7 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	} else {
+		fmt.Fprintln(os.Stderr, "No config file found")
 	}
 }
