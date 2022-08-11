@@ -92,10 +92,9 @@ export default {
       this.alp2 = response.data;
     });
     Promise.all([pro1, pro2]).then(() => {
+      this.initCanvas();
       this.drawRankingLink();
     });
-
-    this.initCanvas();
   },
   methods: {
     initCanvas() {
@@ -142,11 +141,15 @@ export default {
       // ctx.fillStyle = 'red';
       // ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "blue";
-      ctx.fillRect(0, 0, 100, 10);
+
       for (const uri of uriIntersection.keys()) {
         const h1 = table1Map.get(uri);
         const h2 = table2Map.get(uri);
         console.log(uri, h1, h2);
+        ctx.beginPath();
+        ctx.moveTo(0, h1);
+        ctx.lineTo(canvas.width, h2);
+        ctx.stroke();
       }
     },
   },
