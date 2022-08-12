@@ -95,6 +95,10 @@ var uploadCmd = &cobra.Command{
 		//fmt.Println("contestID", contestID)
 		//fmt.Println("accessLogPath", accessLogPath)
 		//fmt.Println("slowLogPath", slowLogPath)
+
+		contestName := getContestName()
+		fmt.Printf("[Contest Name] %s (ID: %d)\n", contestName, contestID)
+
 		getScoreMessage()
 
 		// Check if score and message are set
@@ -234,6 +238,50 @@ func getScoreMessage() {
 
 	score = _score
 	message = _message
+}
+
+func getContestName() string {
+	contestName := ""
+	type Contest struct {
+		ContestID   int    `json:"contest_id"`
+		ContestName string `json:"contest_name"`
+	}
+	var contests []Contest
+
+	endpoint := isuloggerAPI + "/contest"
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		panic("Error")
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Secret-Key", secretKey)
+
+	client := new(http.Client)
+	resp, err := client.Do(req)
+	if err != nil {
+		panic("Error")
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = json.Unmarshal(body, &contests)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	for _, contest := range contests {
+		if contest.ContestID == contestID {
+			contestName = contest.ContestName
+		}
+	}
+
+	return contestName
 }
 
 func postScoreMessage() {
