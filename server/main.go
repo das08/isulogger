@@ -3,13 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"io"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 
 	_ "github.com/lib/pq"
 )
@@ -18,6 +19,7 @@ var (
 	db           *sql.DB
 	PostgresUser = os.Getenv("POSTGRES_USER")
 	PostgresPass = os.Getenv("POSTGRES_PASSWORD")
+	secretKey    string
 )
 
 type Contest struct {
@@ -186,9 +188,18 @@ func main() {
 
 	e := echo.New()
 
+	// API secret key
+	secretKey = os.Getenv("SECRET_KEY")
+	if secretKey == "" {
+		e.Logger.Warnf("SECRET_KEY is not set")
+		e.Logger.Warnf("SECRET_KEY is \"isulogger\"")
+		secretKey = "isulogger"
+	}
+
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.Use(SharedKeyAuthMiddleware)
 	e.Use(middleware.CORS())
 
 	e.GET("/", hello)
