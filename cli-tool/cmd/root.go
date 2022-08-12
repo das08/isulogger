@@ -28,6 +28,23 @@ to quickly create a Cobra application.`,
 	// Run: func(cmd *cobra.Command, args []string) { },
 }
 
+type BellSkipper struct{}
+
+// Write implements an io.WriterCloser over os.Stderr, but it skips the terminal
+// bell character.
+func (bs *BellSkipper) Write(b []byte) (int, error) {
+	const charBell = 7 // c.f. readline.CharBell
+	if len(b) == 1 && b[0] == charBell {
+		return 0, nil
+	}
+	return os.Stderr.Write(b)
+}
+
+// Close implements an io.WriterCloser over os.Stderr.
+func (bs *BellSkipper) Close() error {
+	return os.Stderr.Close()
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -63,7 +80,6 @@ func initConfig() {
 
 		// Search config in home directory with name ".isulogger" (without extension).
 		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".isulogger")
 	}
@@ -74,6 +90,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		//fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	} else {
-		viper.WriteConfigAs(".isulogger.yaml")
+		home, _ := os.UserHomeDir()
+		err = viper.WriteConfigAs(home + "/.isulogger.yaml")
 	}
 }

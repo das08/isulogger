@@ -7,6 +7,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
 	"net/url"
@@ -62,6 +63,7 @@ func promptGetContestID(p Prompt) int {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -98,6 +100,7 @@ func promptGetURL(p Prompt) string {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -125,6 +128,7 @@ func promptGetString(p Prompt) string {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -178,4 +182,8 @@ func configuration() {
 	viper.Set("slow_log_path", slowLog)
 
 	saveConfiguration()
+	color.Set(color.FgGreen, color.Bold)
+	fmt.Printf("[OK] ")
+	color.Unset()
+	fmt.Printf("Configuration saved: %s\n", viper.ConfigFileUsed())
 }
