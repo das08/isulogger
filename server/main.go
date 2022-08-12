@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -121,6 +122,63 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	return entry
 }
 
+func hasLatestEntry(contestID int, minutesAgo int) bool {
+	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = $1 AND timestamp >= $2", contestID, t).Scan(&count)
+	if err != nil {
+		fmt.Println("Error: Get entry failed: ", err)
+	}
+	if count > 0 {
+		return true
+	} else {
+		return false
+	}
+}
+
+func insertLogFileToLatest(contestID int, logType, logPath string) (bool, string) {
+	var id int
+	var err error
+	switch logType {
+	case "access":
+		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
+
+	case "slow":
+		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
+	}
+
+	if err != nil {
+		fmt.Println("Error: Create entry failed: ", err)
+	}
+
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, "Failed to update entry"
+	}
+}
+
+func insertLogFileByID(contestID, entryID int, logType, logPath string) (bool, string) {
+	var id int
+	var err error
+	switch logType {
+	case "access":
+		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE contest_id = $2 AND id = $3 RETURNING id", logPath, contestID, entryID).Scan(&id)
+	case "slow":
+		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE contest_id = $2 AND id = $3 RETURNING id", logPath, contestID, entryID).Scan(&id)
+	}
+
+	if err != nil {
+		fmt.Println("Error: Create entry failed: ", err)
+	}
+
+	if id > 0 {
+		return true, fmt.Sprintf("%d", id)
+	} else {
+		return false, "Failed to update entry"
+	}
+}
+
 func main() {
 	// Initialize DB connection
 	db = initializeDB()
@@ -135,10 +193,13 @@ func main() {
 
 	e.GET("/", hello)
 
-	e.GET("/new_log", createLogEntry)
-	e.POST("/new_contest", createContest)
-	e.GET("/get", getLogEntry)
-	e.GET("/get_contest", getContest)
+	e.POST("/contest", createContest)
+	e.POST("/entry", createLogEntry)
+	e.POST("/entry/:contest_id/:log_type", uploadLogFile)
+
+	e.GET("/entry", getLogEntry)
+	e.GET("/contest", getContest)
+	e.GET("/check/entry", checkLatestEntry)
 
 	e.Static("/log", "log")
 
@@ -150,24 +211,25 @@ func hello(c echo.Context) error {
 }
 
 func createLogEntry(c echo.Context) error {
-	_contestID := c.QueryParam("contest_id")
-	_score := c.QueryParam("score")
-	message := c.QueryParam("message")
-
-	contestID, err := strconv.Atoi(_contestID)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid contest_id")
+	type postData struct {
+		ContestID int    `json:"contest_id"`
+		Score     int    `json:"score"`
+		Message   string `json:"message"`
 	}
-	score, err := strconv.Atoi(_score)
-	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid score")
+	var p postData
+	if err := c.Bind(&p); err != nil {
+		return echo.ErrInternalServerError
+	}
+	if p.ContestID == 0 {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
 	}
 
-	entry := LogEntry{}
-	entry.ContestID = contestID
-	entry.Timestamp = time.Now()
-	entry.Score = score
-	entry.Message = message
+	entry := LogEntry{
+		ContestID: p.ContestID,
+		Timestamp: time.Now(),
+		Score:     p.Score,
+		Message:   p.Message,
+	}
 
 	if ok, id := insertLogEntry(&entry); !ok {
 		return echo.ErrInternalServerError
@@ -188,11 +250,68 @@ func createContest(c echo.Context) error {
 	fmt.Println("contestname: ", data.ContestName)
 
 	if data.ContestName == "" {
-		return echo.ErrBadRequest
+		return c.String(http.StatusBadRequest, "Contest Name is required")
 	}
 
 	if ok, id := insertContest(data.ContestName); !ok {
 		return echo.ErrInternalServerError
+	} else {
+		return c.JSON(http.StatusOK, id)
+	}
+}
+
+func uploadLogFile(c echo.Context) error {
+	contestIDRaw := c.Param("contest_id")
+	if contestIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+	logType := c.Param("log_type")
+	if logType == "" {
+		return c.String(http.StatusBadRequest, "Log Type is required")
+	}
+	if logType != "access" && logType != "slow" {
+		return c.String(http.StatusBadRequest, "Log Type is invalid")
+	}
+
+	file, err := c.FormFile("log")
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	entryIDRaw := c.FormValue("entry_id")
+	entryID, err := strconv.Atoi(entryIDRaw)
+	if err != nil && entryIDRaw != "" {
+		return c.String(http.StatusBadRequest, "Entry ID is invalid")
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	defer src.Close()
+	dst, err := os.Create("./log/" + file.Filename)
+	if err != nil {
+		return echo.ErrInternalServerError
+	}
+	defer dst.Close()
+	if _, err = io.Copy(dst, src); err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	var ok bool
+	var id string
+	if entryID > 0 {
+		ok, id = insertLogFileByID(contestID, entryID, logType, file.Filename)
+	} else {
+		ok, id = insertLogFileToLatest(contestID, logType, file.Filename)
+	}
+
+	if !ok {
+		return c.JSON(http.StatusInternalServerError, id)
 	} else {
 		return c.JSON(http.StatusOK, id)
 	}
@@ -211,7 +330,7 @@ func getLogEntry(c echo.Context) error {
 
 	contestID, err := strconv.Atoi(contestIDRaw)
 	if err != nil {
-		return echo.ErrBadRequest
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
 	}
 	entry := selectLogEntry(contestID, orderBy)
 	return c.JSON(http.StatusOK, entry)
@@ -220,4 +339,25 @@ func getLogEntry(c echo.Context) error {
 func getContest(c echo.Context) error {
 	contest := selectContest()
 	return c.JSON(http.StatusOK, contest)
+}
+
+func checkLatestEntry(c echo.Context) error {
+	contestIDRaw := c.QueryParam("contest_id")
+	minutesAgoRaw := c.QueryParam("minutes_ago")
+	if contestIDRaw == "" || minutesAgoRaw == "" {
+		return echo.ErrBadRequest
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+	minutesAgo, err := strconv.Atoi(minutesAgoRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Minutes ago is invalid")
+	}
+	if hasLatestEntry(contestID, minutesAgo) {
+		return c.String(http.StatusOK, "true")
+	} else {
+		return c.String(http.StatusOK, "false")
+	}
 }
