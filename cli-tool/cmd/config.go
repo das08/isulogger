@@ -7,6 +7,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
 	"net/url"
@@ -181,4 +182,8 @@ func configuration() {
 	viper.Set("slow_log_path", slowLog)
 
 	saveConfiguration()
+	color.Set(color.FgGreen, color.Bold)
+	fmt.Printf("[OK] ")
+	color.Unset()
+	fmt.Printf("Configuration saved: %s\n", viper.ConfigFileUsed())
 }

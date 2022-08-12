@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -97,7 +98,11 @@ var uploadCmd = &cobra.Command{
 		//fmt.Println("slowLogPath", slowLogPath)
 
 		contestName := getContestName()
-		fmt.Printf("[Contest Name] %s (ID: %d)\n", contestName, contestID)
+
+		fmt.Printf("[Contest Name] ")
+		color.Set(color.Bold, color.Underline)
+		fmt.Printf("%s (ID: %d)\n", contestName, contestID)
+		color.Unset()
 
 		getScoreMessage()
 
@@ -131,6 +136,11 @@ func init() {
 
 func promptGetScore(p Prompt) int {
 	validate := func(input string) error {
+		// check if it is a number
+		_, err := strconv.Atoi(input)
+		if err != nil && input != "" {
+			return errors.New(p.errorMsg)
+		}
 		return nil
 	}
 
@@ -143,6 +153,7 @@ func promptGetScore(p Prompt) int {
 
 	prompt := promptui.Prompt{
 		Label:     p.promptMsg,
+		Default:   "",
 		Templates: templates,
 		Validate:  validate,
 		Stdout:    &BellSkipper{},
@@ -222,8 +233,7 @@ func promptGetYN(p Prompt) bool {
 }
 
 func getScoreMessage() {
-	fmt.Println("Enter score and message.")
-	fmt.Println("Leave score blank to skip creating new log entry.")
+	fmt.Println("Enter score and message. Leave score blank to skip creating new log entry.")
 	scorePrompt := Prompt{
 		promptMsg: "Enter score: ",
 		errorMsg:  "Score has to be greater than 0",
@@ -313,16 +323,21 @@ func postScoreMessage() {
 	}
 	defer resp.Body.Close()
 
-	byteArray, err := ioutil.ReadAll(resp.Body)
+	_, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		panic("Error")
 	}
 
 	if resp.StatusCode == 200 {
-		fmt.Println("[OK] Score and message posted successfully.")
+		color.Set(color.FgGreen, color.Bold)
+		fmt.Printf("[OK] ")
+		color.Unset()
+		fmt.Printf("Score and message posted successfully. %d\n", resp.StatusCode)
 	} else {
-		fmt.Println("[ERROR] Score and message posting failed.")
-		fmt.Println(string(byteArray), resp.Status)
+		color.Set(color.FgRed, color.Bold)
+		fmt.Printf("[ERROR] ")
+		color.Unset()
+		fmt.Printf("Score and message posting failed. %d\n", resp.StatusCode)
 		os.Exit(1)
 	}
 }
@@ -389,9 +404,15 @@ func postLog(logType string) {
 	}
 
 	if resp.StatusCode == 200 {
-		fmt.Printf("[OK] %s log posted successfully. %d\n", logType, resp.StatusCode)
+		color.Set(color.FgGreen, color.Bold)
+		fmt.Printf("[OK] ")
+		color.Unset()
+		fmt.Printf("%s log posted successfully. %d\n", logType, resp.StatusCode)
 	} else {
-		fmt.Printf("[Error] %s log posting failed. %d\n", logType, resp.StatusCode)
+		color.Set(color.FgRed, color.Bold)
+		fmt.Printf("[Error] ")
+		color.Unset()
+		fmt.Printf("%s log posting failed. %d\n", logType, resp.StatusCode)
 		//os.Exit(1)
 	}
 }
