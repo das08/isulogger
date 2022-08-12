@@ -109,6 +109,33 @@ func promptGetURL(p Prompt) string {
 	return result
 }
 
+func promptGetLogPath(p Prompt) string {
+	validate := func(input string) error {
+		return nil
+	}
+
+	templates := &promptui.PromptTemplates{
+		Prompt:  "{{ . }} ",
+		Valid:   "{{ . | green }} ",
+		Invalid: "{{ . | red }} ",
+		Success: "{{ . | bold }} ",
+	}
+
+	prompt := promptui.Prompt{
+		Label:     p.promptMsg,
+		Templates: templates,
+		Validate:  validate,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	return result
+}
+
 func saveConfiguration() {
 	viper.WriteConfig()
 }
@@ -126,8 +153,22 @@ func configuration() {
 	}
 	contestID := promptGetContestID(contestIDPrompt)
 
+	accessLogPrompt := Prompt{
+		"Access Log Path: ",
+		"Access Log must be valid path",
+	}
+	accessLog := promptGetLogPath(accessLogPrompt)
+
+	slowLogPrompt := Prompt{
+		"Slow Log Path: ",
+		"Slow Log must be valid path",
+	}
+	slowLog := promptGetLogPath(slowLogPrompt)
+
 	viper.Set("isulogger_api", isuloggerAPI)
 	viper.Set("contest_id", contestID)
+	viper.Set("access_log_path", accessLog)
+	viper.Set("slow_log_path", slowLog)
 
 	saveConfiguration()
 }

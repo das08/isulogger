@@ -5,10 +5,13 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"os"
+	"strconv"
 )
 
 var (
@@ -46,7 +49,7 @@ to quickly create a Cobra application.`,
 		if viper.Get("contest_id") != nil {
 			contestID = viper.Get("contest_id").(int)
 		}
-		if id, err := cmd.Flags().GetInt("contestid"); err == nil {
+		if id, err := cmd.Flags().GetInt("contestid"); err == nil && id > 0 {
 			contestID = id
 		}
 
@@ -56,13 +59,13 @@ to quickly create a Cobra application.`,
 		}
 
 		// Set the access log path
-		if path, err := cmd.Flags().GetString("accesslog"); err == nil {
-			accessLogPath = path
+		if viper.Get("access_log_path") != nil {
+			accessLogPath = viper.Get("access_log_path").(string)
 		}
 
 		// Set the slow log path
-		if path, err := cmd.Flags().GetString("slowlog"); err == nil {
-			slowLogPath = path
+		if viper.Get("slow_log_path") != nil {
+			slowLogPath = viper.Get("slow_log_path").(string)
 		}
 
 		if accessLogPath == "" && slowLogPath == "" {
@@ -80,6 +83,49 @@ func init() {
 	rootCmd.AddCommand(upCmd)
 
 	upCmd.Flags().IntP("contestid", "c", 0, "Contest ID")
-	upCmd.Flags().StringP("accesslog", "a", "", "accesslog")
-	upCmd.Flags().StringP("slowlog", "s", "", "slowlog")
+}
+
+func promptGetScore(p Prompt) int {
+	validate := func(input string) error {
+		id, err := strconv.Atoi(input)
+		if err != nil {
+			return errors.New("has to be integer")
+		}
+		if id < 0 {
+			return errors.New("has to be positive integer")
+		}
+		return nil
+	}
+
+	templates := &promptui.PromptTemplates{
+		Prompt:  "{{ . }} ",
+		Valid:   "{{ . | green }} ",
+		Invalid: "{{ . | red }} ",
+		Success: "{{ . | bold }} ",
+	}
+
+	prompt := promptui.Prompt{
+		Label:     p.promptMsg,
+		Templates: templates,
+		Validate:  validate,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	contestID, _ := strconv.Atoi(result)
+
+	return contestID
+}
+
+func newEntry() {
+	scorePrompt := Prompt{
+		promptMsg: "Enter score: ",
+		errorMsg:  "Score has to be greater than 0",
+	}
+	score := promptGetScore(scorePrompt)
+	fmt.Println("score", score)
 }
