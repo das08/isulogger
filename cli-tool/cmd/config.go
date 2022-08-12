@@ -62,6 +62,7 @@ func promptGetContestID(p Prompt) int {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -98,6 +99,7 @@ func promptGetURL(p Prompt) string {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -125,6 +127,7 @@ func promptGetString(p Prompt) string {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()

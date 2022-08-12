@@ -141,6 +141,7 @@ func promptGetScore(p Prompt) int {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -170,6 +171,7 @@ func promptGetMessage(p Prompt) string {
 		Label:     p.promptMsg,
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -183,11 +185,7 @@ func promptGetMessage(p Prompt) string {
 
 func promptGetYN(p Prompt) bool {
 	validate := func(input string) error {
-		if len(input) <= 0 {
-			return errors.New(p.errorMsg)
-		}
-
-		if input != "y" && input != "n" {
+		if input != "y" && input != "n" && input != "Y" && input != "N" {
 			return errors.New(p.errorMsg)
 		}
 		return nil
@@ -202,8 +200,10 @@ func promptGetYN(p Prompt) bool {
 
 	prompt := promptui.Prompt{
 		Label:     p.promptMsg,
+		Default:   "y",
 		Templates: templates,
 		Validate:  validate,
+		Stdout:    &BellSkipper{},
 	}
 
 	result, err := prompt.Run()
@@ -211,8 +211,10 @@ func promptGetYN(p Prompt) bool {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
-
-	return result == "y"
+	if result == "y" || result == "Y" {
+		return true
+	}
+	return false
 }
 
 func getScoreMessage() {
@@ -279,7 +281,7 @@ func postScoreMessage() {
 
 func confirmMessage() bool {
 	confirmPrompt := Prompt{
-		promptMsg: "Are you sure you want to upload logs? (y/n): ",
+		promptMsg: "Are you sure you want to upload logs? (Y/n): ",
 		errorMsg:  "Please enter y or n",
 	}
 	return promptGetYN(confirmPrompt)
