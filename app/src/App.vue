@@ -72,6 +72,7 @@ export default {
       {title: 'ホーム', icon: 'mdi-home', link: {name: 'HelloWorld'}},
       {title: 'ログを見る', icon: 'mdi-text-box-multiple', link: {name: 'Logs'}},
       {title: 'コンテスト作成', icon: 'mdi-plus-circle', link: {name: 'Create Contest'}},
+      {title:'設定', icon: 'mdi-settings', link: {name: 'Settings'}},
     ]
   }),
 };

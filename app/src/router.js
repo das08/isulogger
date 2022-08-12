@@ -3,6 +3,7 @@ import VueRouter from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
 import LogEntry from './components/LogEntry.vue'
 import CreateContest from "./components/CreateContest.vue"
+import SettingsView from "./components/SettingsView.vue"
 
 Vue.use(VueRouter)
 
@@ -21,6 +22,11 @@ const routes = [
         path: '/create_contest',
         name: 'Create Contest',
         component: CreateContest
+    },
+    {
+        path: '/settings',
+        name: 'Settings',
+        component: SettingsView
     },
 ]
 
