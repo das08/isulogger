@@ -109,7 +109,7 @@ func promptGetURL(p Prompt) string {
 	return result
 }
 
-func promptGetLogPath(p Prompt) string {
+func promptGetString(p Prompt) string {
 	validate := func(input string) error {
 		return nil
 	}
@@ -147,6 +147,12 @@ func configuration() {
 	}
 	isuloggerAPI := promptGetURL(isuloggerAPIPrompt)
 
+	secretKeyPrompt := Prompt{
+		promptMsg: "Enter secret key: ",
+		errorMsg:  "has to be valid secret key",
+	}
+	secretKey := promptGetString(secretKeyPrompt)
+
 	contestIDPrompt := Prompt{
 		"Default Contest ID: ",
 		"Contest ID must be integer and greater than 0",
@@ -157,15 +163,16 @@ func configuration() {
 		"Access Log Path: ",
 		"Access Log must be valid path",
 	}
-	accessLog := promptGetLogPath(accessLogPrompt)
+	accessLog := promptGetString(accessLogPrompt)
 
 	slowLogPrompt := Prompt{
 		"Slow Log Path: ",
 		"Slow Log must be valid path",
 	}
-	slowLog := promptGetLogPath(slowLogPrompt)
+	slowLog := promptGetString(slowLogPrompt)
 
 	viper.Set("isulogger_api", isuloggerAPI)
+	viper.Set("secret_key", secretKey)
 	viper.Set("contest_id", contestID)
 	viper.Set("access_log_path", accessLog)
 	viper.Set("slow_log_path", slowLog)

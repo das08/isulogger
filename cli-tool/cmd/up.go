@@ -22,6 +22,7 @@ import (
 
 var (
 	isuloggerAPI  string
+	secretKey     string
 	contestID     int
 	accessLogPath string
 	slowLogPath   string
@@ -44,7 +45,15 @@ var upCmd = &cobra.Command{
 		if viper.Get("isulogger_api") != nil {
 			isuloggerAPI = viper.Get("isulogger_api").(string)
 		} else {
-			fmt.Println("isulogger_api not found in config file. Run ./isulogger config to create one.")
+			fmt.Println("isulogger_api not found in config file. Run ./isulogger config .")
+			os.Exit(1)
+		}
+
+		// Set the secret key
+		if viper.Get("secret_key") != nil {
+			secretKey = viper.Get("secret_key").(string)
+		} else {
+			fmt.Println("secret_key not found in config file. Run ./isulogger config .")
 			os.Exit(1)
 		}
 
@@ -197,6 +206,7 @@ func postScoreMessage() {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Secret-Key", secretKey)
 
 	client := new(http.Client)
 	resp, err := client.Do(req)
@@ -257,7 +267,10 @@ func postLog(logType string) {
 
 	endpoint := fmt.Sprintf("%s/entry/%d/%s", isuloggerAPI, contestID, logType)
 	req, err := http.NewRequest("POST", endpoint, body)
+
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("X-Secret-Key", secretKey)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
