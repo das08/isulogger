@@ -7,6 +7,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -28,6 +29,7 @@ var (
 	slowLogPath   string
 	score         int
 	message       string
+	skip          bool
 )
 
 // uploadCmd represents the up command
@@ -85,6 +87,11 @@ var uploadCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Set the skip flag
+		if s, err := cmd.Flags().GetBool("skip"); err == nil {
+			skip = s
+		}
+
 		//fmt.Println("contestID", contestID)
 		//fmt.Println("accessLogPath", accessLogPath)
 		//fmt.Println("slowLogPath", slowLogPath)
@@ -93,6 +100,12 @@ var uploadCmd = &cobra.Command{
 		// Check if score and message are set
 		if score != 0 && message != "" {
 			postScoreMessage()
+		}
+
+		if !skip {
+			if !confirmMessage() {
+				return
+			}
 		}
 
 		// Upload logs
@@ -109,6 +122,7 @@ func init() {
 	rootCmd.AddCommand(uploadCmd)
 
 	uploadCmd.Flags().IntP("contestid", "c", 0, "Contest ID")
+	uploadCmd.Flags().BoolP("skip", "s", false, "Skip prompt")
 }
 
 func promptGetScore(p Prompt) int {
@@ -165,6 +179,40 @@ func promptGetMessage(p Prompt) string {
 	}
 
 	return result
+}
+
+func promptGetYN(p Prompt) bool {
+	validate := func(input string) error {
+		if len(input) <= 0 {
+			return errors.New(p.errorMsg)
+		}
+
+		if input != "y" && input != "n" {
+			return errors.New(p.errorMsg)
+		}
+		return nil
+	}
+
+	templates := &promptui.PromptTemplates{
+		Prompt:  "{{ . }} ",
+		Valid:   "{{ . | green }} ",
+		Invalid: "{{ . | red }} ",
+		Success: "{{ . | bold }} ",
+	}
+
+	prompt := promptui.Prompt{
+		Label:     p.promptMsg,
+		Templates: templates,
+		Validate:  validate,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	return result == "y"
 }
 
 func getScoreMessage() {
@@ -227,6 +275,14 @@ func postScoreMessage() {
 		fmt.Println(string(byteArray), resp.Status)
 		os.Exit(1)
 	}
+}
+
+func confirmMessage() bool {
+	confirmPrompt := Prompt{
+		promptMsg: "Are you sure you want to upload logs? (y/n): ",
+		errorMsg:  "Please enter y or n",
+	}
+	return promptGetYN(confirmPrompt)
 }
 
 func postLog(logType string) {
