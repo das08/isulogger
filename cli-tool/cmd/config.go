@@ -27,16 +27,6 @@ var configCmd = &cobra.Command{
 	Short: "Configuration for isulogger.",
 	Long:  `Configuration for isulogger.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("config called")
-		if err := viper.ReadInConfig(); err == nil {
-			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-		}
-
-		//if viper.Get("config") != nil {
-		//	fmt.Println(viper.Get("config"))
-		//} else {
-		//	fmt.Println("config is nil")
-		//}
 		configuration()
 	},
 }
@@ -45,7 +35,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 }
 
-func promptGetInputInt(p Prompt) int {
+func promptGetContestID(p Prompt) int {
 	validate := func(input string) error {
 		if len(input) <= 0 {
 			return errors.New(p.errorMsg)
@@ -85,7 +75,7 @@ func promptGetInputInt(p Prompt) int {
 	return contestID
 }
 
-func promptGetInputStr(p Prompt) string {
+func promptGetURL(p Prompt) string {
 	validate := func(input string) error {
 		if len(input) <= 0 {
 			return errors.New(p.errorMsg)
@@ -128,13 +118,13 @@ func configuration() {
 		promptMsg: "Enter isulogger API URL: ",
 		errorMsg:  "has to be valid URL",
 	}
-	isuloggerAPI := promptGetInputStr(isuloggerAPIPrompt)
+	isuloggerAPI := promptGetURL(isuloggerAPIPrompt)
 
 	contestIDPrompt := Prompt{
 		"Default Contest ID: ",
 		"Contest ID must be integer and greater than 0",
 	}
-	contestID := promptGetInputInt(contestIDPrompt)
+	contestID := promptGetContestID(contestIDPrompt)
 
 	viper.Set("isulogger_api", isuloggerAPI)
 	viper.Set("contest_id", contestID)
