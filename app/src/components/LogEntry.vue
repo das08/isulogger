@@ -12,7 +12,7 @@
                 v-model="selected_contest"
                 @change="onContestSelect"
                 :items="contests"
-                item-text="contest_name"
+                :item-text="item =>`${item.contest_name} (Contest ID: ${item.contest_id})`"
                 item-value="contest_id"
                 label="選択中のコンテスト"
                 outlined
