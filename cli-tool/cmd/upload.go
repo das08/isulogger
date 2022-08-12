@@ -31,6 +31,7 @@ var (
 	score         int
 	message       string
 	skip          bool
+	noScore       bool
 )
 
 // uploadCmd represents the up command
@@ -93,6 +94,11 @@ var uploadCmd = &cobra.Command{
 			skip = s
 		}
 
+		// Set the no-score flag
+		if x, err := cmd.Flags().GetBool("no-score"); err == nil {
+			noScore = x
+		}
+
 		//fmt.Println("contestID", contestID)
 		//fmt.Println("accessLogPath", accessLogPath)
 		//fmt.Println("slowLogPath", slowLogPath)
@@ -104,7 +110,9 @@ var uploadCmd = &cobra.Command{
 		fmt.Printf("%s (ID: %d)\n", contestName, contestID)
 		color.Unset()
 
-		getScoreMessage()
+		if !noScore {
+			getScoreMessage()
+		}
 
 		// Check if score and message are set
 		if score != 0 && message != "" {
@@ -131,7 +139,8 @@ func init() {
 	rootCmd.AddCommand(uploadCmd)
 
 	uploadCmd.Flags().IntP("contestid", "c", 0, "Contest ID")
-	uploadCmd.Flags().BoolP("skip", "s", false, "Skip prompt")
+	uploadCmd.Flags().BoolP("skip", "s", false, "Skip confirmation prompt")
+	uploadCmd.Flags().BoolP("no-score", "x", false, "Skip score prompt")
 }
 
 func promptGetScore(p Prompt) int {
