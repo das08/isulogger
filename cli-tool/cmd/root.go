@@ -63,7 +63,6 @@ func initConfig() {
 
 		// Search config in home directory with name ".isulogger" (without extension).
 		viper.AddConfigPath(home)
-		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".isulogger")
 	}
@@ -74,6 +73,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		//fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	} else {
-		viper.WriteConfigAs(".isulogger.yaml")
+		home, _ := os.UserHomeDir()
+		err = viper.WriteConfigAs(home + "/.isulogger.yaml")
 	}
 }
