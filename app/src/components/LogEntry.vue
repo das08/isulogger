@@ -104,6 +104,7 @@
 </template>
 
 <script>
+import { authHeaders } from "@/ls";
 import axios from "axios";
 
 export default {
@@ -142,6 +143,7 @@ export default {
       return axios
           .get("http://localhost:8082/entry?contest_id="+contestID, {
             dataType: "json",
+            headers: authHeaders(),
           })
           .then((response) => {
             if (response.data === null) {
@@ -163,6 +165,7 @@ export default {
       return axios
           .get("http://localhost:8082/contest", {
             dataType: "json",
+            headers: authHeaders(),
           })
           .then((response) => {
             console.log(response);
@@ -189,6 +192,7 @@ export default {
       return axios
           .get("http://localhost:8082/log/"+filePath+"?id=1", {
             dataType: "text",
+            headers: authHeaders(),
           })
           .then((response) => {
             console.log(response.data);
