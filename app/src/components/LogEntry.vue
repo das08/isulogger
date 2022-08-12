@@ -88,10 +88,10 @@
       >
         <v-card>
           <v-card-title>
-            <span class="text-h5">{{ log_type }} Result</span>
+            <span class="text-h5">【{{ log_type }} Result】 {{ log_contents.timestamp }} (Score: {{ log_contents.score }})</span>
           </v-card-title>
           <v-card-text>
-            <span class="text-subtitle-1">{{ log_contents.timestamp }} (Score: {{ log_contents.score }})</span>
+            <span class="text-subtitle-1">{{ log_contents.file_name }}</span>
           </v-card-text>
           <v-card-text id="log_dialog">
             {{ log_contents.log }}
@@ -198,6 +198,7 @@ export default {
           .then((response) => {
             console.log(response.data);
             this.log_contents = {
+              file_name: filePath,
               log: response.data,
               score: item.score,
               timestamp: item.timestamp,
