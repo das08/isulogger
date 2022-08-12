@@ -32,13 +32,8 @@ var (
 // upCmd represents the up command
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Upload score, message, and logs to isulogger",
+	Long:  `Upload score, message, and logs to isulogger.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := viper.ReadInConfig(); err != nil {
 			fmt.Println("Config file not found. Run ./isulogger config to create one.")
@@ -81,9 +76,9 @@ to quickly create a Cobra application.`,
 			os.Exit(1)
 		}
 
-		fmt.Println("contestID", contestID)
-		fmt.Println("accessLogPath", accessLogPath)
-		fmt.Println("slowLogPath", slowLogPath)
+		//fmt.Println("contestID", contestID)
+		//fmt.Println("accessLogPath", accessLogPath)
+		//fmt.Println("slowLogPath", slowLogPath)
 		getScoreMessage()
 
 		// Check if score and message are set
@@ -164,6 +159,8 @@ func promptGetMessage(p Prompt) string {
 }
 
 func getScoreMessage() {
+	fmt.Println("Enter score and message.")
+	fmt.Println("Leave score blank to skip creating new log entry.")
 	scorePrompt := Prompt{
 		promptMsg: "Enter score: ",
 		errorMsg:  "Score has to be greater than 0",
