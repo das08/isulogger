@@ -139,6 +139,7 @@ export default {
         return;
       }
       this.loading = true;
+      this.entries = [];
       return axios
           .get("http://localhost:8082/entry?contest_id="+contestID, {
             dataType: "json",
