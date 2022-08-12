@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/viper"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -44,7 +45,7 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 }
 
-func promptGetInput(p Prompt) int {
+func promptGetInputInt(p Prompt) int {
 	validate := func(input string) error {
 		if len(input) <= 0 {
 			return errors.New(p.errorMsg)
@@ -84,16 +85,58 @@ func promptGetInput(p Prompt) int {
 	return contestID
 }
 
+func promptGetInputStr(p Prompt) string {
+	validate := func(input string) error {
+		if len(input) <= 0 {
+			return errors.New(p.errorMsg)
+		}
+		_, err := url.ParseRequestURI(input)
+		if err != nil {
+			return errors.New("invalid url")
+		}
+		return nil
+	}
+
+	templates := &promptui.PromptTemplates{
+		Prompt:  "{{ . }} ",
+		Valid:   "{{ . | green }} ",
+		Invalid: "{{ . | red }} ",
+		Success: "{{ . | bold }} ",
+	}
+
+	prompt := promptui.Prompt{
+		Label:     p.promptMsg,
+		Templates: templates,
+		Validate:  validate,
+	}
+
+	result, err := prompt.Run()
+	if err != nil {
+		fmt.Printf("Prompt failed %v\n", err)
+		os.Exit(1)
+	}
+
+	return result
+}
+
 func saveConfiguration() {
 	viper.WriteConfig()
 }
 
 func configuration() {
+	isuloggerAPIPrompt := Prompt{
+		promptMsg: "Enter isulogger API URL: ",
+		errorMsg:  "has to be valid URL",
+	}
+	isuloggerAPI := promptGetInputStr(isuloggerAPIPrompt)
+
 	contestIDPrompt := Prompt{
 		"Default Contest ID: ",
 		"Contest ID must be integer and greater than 0",
 	}
-	contestID := promptGetInput(contestIDPrompt)
+	contestID := promptGetInputInt(contestIDPrompt)
+
+	viper.Set("isulogger_api", isuloggerAPI)
 	viper.Set("contest_id", contestID)
 
 	saveConfiguration()
