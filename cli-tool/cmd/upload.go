@@ -30,9 +30,9 @@ var (
 	message       string
 )
 
-// upCmd represents the up command
-var upCmd = &cobra.Command{
-	Use:   "up",
+// uploadCmd represents the up command
+var uploadCmd = &cobra.Command{
+	Use:   "upload",
 	Short: "Upload score, message, and logs to isulogger",
 	Long:  `Upload score, message, and logs to isulogger.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -106,9 +106,9 @@ var upCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(upCmd)
+	rootCmd.AddCommand(uploadCmd)
 
-	upCmd.Flags().IntP("contestid", "c", 0, "Contest ID")
+	uploadCmd.Flags().IntP("contestid", "c", 0, "Contest ID")
 }
 
 func promptGetScore(p Prompt) int {
