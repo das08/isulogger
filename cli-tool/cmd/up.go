@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 var (
@@ -86,12 +87,16 @@ to quickly create a Cobra application.`,
 		getScoreMessage()
 
 		// Check if score and message are set
-		if score == 0 || message == "" {
-			//fmt.Println("Score and message are not set. Run ./isulogger config to set them.")
-			//os.Exit(1)
-			postAccessLog()
-		} else {
+		if score != 0 && message != "" {
 			postScoreMessage()
+		}
+
+		// Upload logs
+		if accessLogPath != "" {
+			postLog("access")
+		}
+		if slowLogPath != "" {
+			postLog("slow")
 		}
 	},
 }
@@ -217,8 +222,23 @@ func postScoreMessage() {
 	}
 }
 
-func postAccessLog() {
-	file, err := os.Open(accessLogPath)
+func postLog(logType string) {
+	if logType != "access" && logType != "slow" {
+		fmt.Println("Log type is invalid. It has to be access or slow.")
+		os.Exit(1)
+	}
+
+	var logPath, fileName string
+	now := time.Now().Format("2006-01-02-15-04-05")
+	if logType == "access" {
+		logPath = accessLogPath
+		fileName = "access-" + now + ".log"
+	} else {
+		logPath = slowLogPath
+		fileName = "slow-" + now + ".log"
+	}
+
+	file, err := os.Open(logPath)
 	if err != nil {
 		panic(err)
 	}
@@ -226,22 +246,19 @@ func postAccessLog() {
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("log", "name.txt")
+	part, err := writer.CreateFormFile("log", fileName)
 	if err != nil {
 		panic("Error")
 	}
 	if _, err := io.Copy(part, file); err != nil {
 		panic("Error")
 	}
-	err = writer.WriteField("token", "token")
-	if err != nil {
-		panic("Error")
-	}
 	err = writer.Close()
 	if err != nil {
 		panic("Error")
 	}
-	endpoint := isuloggerAPI + "/entry/4/access"
+
+	endpoint := fmt.Sprintf("%s/entry/%d/%s", isuloggerAPI, contestID, logType)
 	req, err := http.NewRequest("POST", endpoint, body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	client := &http.Client{}
@@ -254,5 +271,11 @@ func postAccessLog() {
 	if err != nil {
 		panic("Error")
 	}
-	fmt.Println("[OK] Access log posted successfully.", resp.Status)
+
+	if resp.StatusCode == 200 {
+		fmt.Printf("[OK] %s log posted successfully. %d\n", logType, resp.StatusCode)
+	} else {
+		fmt.Printf("[Error] %s log posting failed. %d\n", logType, resp.StatusCode)
+		//os.Exit(1)
+	}
 }
