@@ -11,7 +11,9 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
@@ -85,8 +87,9 @@ to quickly create a Cobra application.`,
 
 		// Check if score and message are set
 		if score == 0 || message == "" {
-			fmt.Println("Score and message are not set. Run ./isulogger config to set them.")
-			os.Exit(1)
+			//fmt.Println("Score and message are not set. Run ./isulogger config to set them.")
+			//os.Exit(1)
+			postAccessLog()
 		} else {
 			postScoreMessage()
 		}
@@ -212,4 +215,44 @@ func postScoreMessage() {
 		fmt.Println(string(byteArray), resp.Status)
 		os.Exit(1)
 	}
+}
+
+func postAccessLog() {
+	file, err := os.Open(accessLogPath)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("log", "name.txt")
+	if err != nil {
+		panic("Error")
+	}
+	if _, err := io.Copy(part, file); err != nil {
+		panic("Error")
+	}
+	err = writer.WriteField("token", "token")
+	if err != nil {
+		panic("Error")
+	}
+	err = writer.Close()
+	if err != nil {
+		panic("Error")
+	}
+	endpoint := isuloggerAPI + "/entry/4/access"
+	req, err := http.NewRequest("POST", endpoint, body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic("Error")
+	}
+	defer resp.Body.Close()
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic("Error")
+	}
+	fmt.Println("[OK] Access log posted successfully.", resp.Status)
 }
