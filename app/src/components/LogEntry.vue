@@ -81,6 +81,12 @@
         </v-chip>
       </template>
 
+      <template v-slot:[`item.delete_log`]="{ item }">
+        <v-btn class="mx-2" icon x-small color="error" @click="onDeleteEntry(item)">
+          <v-icon dark>mdi-trash-can</v-icon>
+        </v-btn>
+      </template>
+
     </v-data-table>
 
     <v-row justify="center">
@@ -126,11 +132,12 @@ export default {
         },
         { text: 'Best', value: 'max_score', width: '10%', align: 'end'},
         { text: 'Score', value: 'score', width: '10%' },
-        { text: 'Message', value: 'message', width: '25%' },
+        { text: 'Message', value: 'message', width: '30%' },
         { text: 'Access Log', value: 'access_log', width: '10%' },
         { text: 'Slow Log', value: 'slow_log', width: '10%' },
         { text: 'Status', value: 'status', width: '10%' },
         { text: 'Branch', value: 'branch_name', width: '10%' },
+        { text: '', value: 'delete_log', width: '5%' },
       ],
       entries: [],
       dialog: false,
@@ -219,6 +226,25 @@ export default {
             this.log_type = logType;
             this.dialog = true;
             this.error_alert = false;
+          })
+          .catch((err) => {
+            this.error_alert = true;
+            this.loading = false;
+            this.error_message = err.message;
+          });
+    },
+
+    onDeleteEntry(item) {
+      this.loading = true;
+      return axios
+          .delete("http://localhost:8082/entry/"+item.id, {
+            dataType: "json",
+            headers: authHeaders(),
+          })
+          .then(() => {
+            this.loading = false;
+            this.error_alert = false;
+            this.getLogEntry(this.selected_contest);
           })
           .catch((err) => {
             this.error_alert = true;
