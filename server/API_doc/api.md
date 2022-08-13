@@ -31,6 +31,7 @@ http://localhost:8082/entry
 ```json
 {
   "contest_id": 3,
+  "branch_name": "master",
   "score": 1000,
   "message": "initial bench"
 }
