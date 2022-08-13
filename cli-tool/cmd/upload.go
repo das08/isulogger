@@ -112,8 +112,10 @@ var uploadCmd = &cobra.Command{
 		}
 
 		// Check if score and message are set
-		if score != 0 && message != "" {
+		if score != 0 {
 			postScoreMessage()
+		} else {
+			printWarning("Score is not set. Skipping score and message upload.")
 		}
 
 		if !skip {
@@ -125,9 +127,13 @@ var uploadCmd = &cobra.Command{
 		// Upload logs
 		if accessLogPath != "" {
 			postLog("access")
+		} else {
+			printWarning("Access log path is not set. Skipping access log upload.")
 		}
 		if slowLogPath != "" {
 			postLog("slow")
+		} else {
+			printWarning("Slow log path is not set. Skipping slow log upload.")
 		}
 	},
 }

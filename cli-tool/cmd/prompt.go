@@ -191,6 +191,13 @@ func printSuccess(successMsg string) {
 	fmt.Println(successMsg)
 }
 
+func printWarning(warningMsg string) {
+	color.Set(color.FgHiYellow, color.Bold)
+	fmt.Printf("[--] ")
+	color.Unset()
+	fmt.Println(warningMsg)
+}
+
 func printError(errorMsg string) {
 	color.Set(color.FgRed, color.Bold)
 	fmt.Printf("[Error] ")
