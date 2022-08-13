@@ -1,6 +1,18 @@
 version: "3.8"
 
 services:
+  isulogger-app:
+    container_name: isulogger-app
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    restart: always
+    tty: true
+    environment:
+        - ISULOGGER_API=http://localhost:8082
+    ports:
+      - "8083:8080"
+
   isulogger-server:
       container_name: isulogger-server
       build:
