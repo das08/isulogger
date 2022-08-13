@@ -16,6 +16,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -208,16 +210,26 @@ func getContestName() string {
 	return contestName
 }
 
+func getBranchName() string {
+	output, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(output))
+}
+
 func postScoreMessage() {
 	type postJson struct {
-		ContestID int    `json:"contest_id"`
-		Score     int    `json:"score"`
-		Message   string `json:"message"`
+		ContestID  int    `json:"contest_id"`
+		BranchName string `json:"branch_name"`
+		Score      int    `json:"score"`
+		Message    string `json:"message"`
 	}
 	postData := postJson{
-		ContestID: contestID,
-		Score:     score,
-		Message:   message,
+		ContestID:  contestID,
+		BranchName: getBranchName(),
+		Score:      score,
+		Message:    message,
 	}
 	postDataJson, _ := json.Marshal(postData)
 
