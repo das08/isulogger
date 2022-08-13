@@ -152,7 +152,7 @@ func PromptGetURL(p Prompt) string {
 
 func PromptGetYN(p Prompt) bool {
 	validate := func(input string) error {
-		if input != "y" && input != "n" && input != "Y" && input != "N" {
+		if input != "y" && input != "n" && input != "Y" && input != "N" && input != "" {
 			return errors.New(p.errorMsg)
 		}
 		return nil
@@ -178,7 +178,7 @@ func PromptGetYN(p Prompt) bool {
 		fmt.Printf("Prompt failed %v\n", err)
 		os.Exit(1)
 	}
-	if result == "y" || result == "Y" {
+	if result == "y" || result == "Y" || result == "" {
 		return true
 	}
 	return false
