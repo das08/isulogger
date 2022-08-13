@@ -257,8 +257,8 @@ export default {
 
   mounted() {
     if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
-      this.selected_contest = JSON.parse(JSON.stringify(localStorage.getItem("contest_id")));
-      console.log("mounted",this.selected_contest);
+      this.selected_contest = parseInt(JSON.parse(JSON.stringify(localStorage.getItem("contest_id"))));
+      console.log("mounted",this.selected_contest, typeof this.selected_contest);
       this.getLogEntry(this.selected_contest);
     }
     this.getContest();
