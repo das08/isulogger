@@ -157,7 +157,6 @@ export default {
               this.loading = false;
               return;
             }
-            console.log(response.data);
             for (let i = 0; i < response.data.length; i++) {
               response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
               this.entries.push(response.data[i]);
@@ -179,7 +178,6 @@ export default {
             headers: authHeaders(),
           })
           .then((response) => {
-            console.log(response);
             if (response.data === null) {
               this.contests = [];
               return;
@@ -201,7 +199,6 @@ export default {
       } else if (logType === "Slow Log") {
         filePath = item.slow_log_path;
       }
-      console.log(filePath);
       if (filePath === undefined || filePath === "") {
         return;
       }
@@ -211,7 +208,6 @@ export default {
             headers: authHeaders(),
           })
           .then((response) => {
-            console.log(response.data);
             this.log_contents = {
               file_name: filePath,
               log: response.data,
@@ -261,7 +257,7 @@ export default {
 
   mounted() {
     if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
-      this.selected_contest = JSON.parse(localStorage.getItem("contest_id"));
+      this.selected_contest = JSON.parse(JSON.stringify(localStorage.getItem("contest_id")));
       console.log("mounted",this.selected_contest);
       this.getLogEntry(this.selected_contest);
     }
