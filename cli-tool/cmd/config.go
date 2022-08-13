@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -72,8 +71,5 @@ func configuration() {
 	viper.Set("slow_log_path", slowLog)
 
 	saveConfiguration()
-	color.Set(color.FgGreen, color.Bold)
-	fmt.Printf("[OK] ")
-	color.Unset()
-	fmt.Printf("Configuration saved: %s\n", viper.ConfigFileUsed())
+	printSuccess(fmt.Sprintf("Configuration saved: %s\n", viper.ConfigFileUsed()))
 }

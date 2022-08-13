@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"net/url"
 	"os"
@@ -181,4 +182,18 @@ func PromptGetYN(p Prompt) bool {
 		return true
 	}
 	return false
+}
+
+func printSuccess(successMsg string) {
+	color.Set(color.FgGreen, color.Bold)
+	fmt.Printf("[OK] ")
+	color.Unset()
+	fmt.Println(successMsg)
+}
+
+func printError(errorMsg string) {
+	color.Set(color.FgRed, color.Bold)
+	fmt.Printf("[Error] ")
+	color.Unset()
+	fmt.Println(errorMsg)
 }

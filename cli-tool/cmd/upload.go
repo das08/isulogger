@@ -237,16 +237,9 @@ func postScoreMessage() {
 	}
 
 	if resp.StatusCode == 200 {
-		color.Set(color.FgGreen, color.Bold)
-		fmt.Printf("[OK] ")
-		color.Unset()
-		fmt.Printf("Score and message posted successfully. %d\n", resp.StatusCode)
+		printSuccess(fmt.Sprintf("Score and message successfully posted to IsuLogger. %d", resp.StatusCode))
 	} else {
-		color.Set(color.FgRed, color.Bold)
-		fmt.Printf("[ERROR] ")
-		color.Unset()
-		fmt.Printf("Score and message posting failed. %d\n", resp.StatusCode)
-		os.Exit(1)
+		printError(fmt.Sprintf("Score and message posting failed. %d", resp.StatusCode))
 	}
 }
 
@@ -312,15 +305,8 @@ func postLog(logType string) {
 	}
 
 	if resp.StatusCode == 200 {
-		color.Set(color.FgGreen, color.Bold)
-		fmt.Printf("[OK] ")
-		color.Unset()
-		fmt.Printf("%s log posted successfully. %d\n", logType, resp.StatusCode)
+		printSuccess(fmt.Sprintf("%s log posted successfully. %d", logType, resp.StatusCode))
 	} else {
-		color.Set(color.FgRed, color.Bold)
-		fmt.Printf("[Error] ")
-		color.Unset()
-		fmt.Printf("%s log posting failed. %d\n", logType, resp.StatusCode)
-		//os.Exit(1)
+		printError(fmt.Sprintf("%s log posting failed. %d", logType, resp.StatusCode))
 	}
 }
