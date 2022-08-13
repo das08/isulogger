@@ -43,16 +43,22 @@ var truncateCmd = &cobra.Command{
 				return
 			}
 		}
-		err := os.Truncate(accessLogPath, 0)
-		if err != nil {
-			printError("Access log truncate failed.")
+
+		if accessLogPath != "" {
+			err := os.Truncate(accessLogPath, 0)
+			if err != nil {
+				printError("Access log truncate failed.")
+			}
+			printSuccess("Access log truncated.")
 		}
-		printSuccess("Access log truncated.")
-		err = os.Truncate(slowLogPath, 0)
-		if err != nil {
-			printError("Slow log truncate failed.")
+
+		if slowLogPath != "" {
+			err := os.Truncate(slowLogPath, 0)
+			if err != nil {
+				printError("Slow log truncate failed.")
+			}
+			printSuccess("Slow log truncated.")
 		}
-		printSuccess("Slow log truncated.")
 	},
 }
 
