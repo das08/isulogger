@@ -125,6 +125,19 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	return entry
 }
 
+func deleteLogByID(entryID int) bool {
+	var count int
+	err := db.QueryRow("DELETE FROM entry WHERE id = $1 RETURNING id", entryID).Scan(&count)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		fmt.Println("Error: Delete entry failed: ", err)
+		return false
+	}
+	return true
+}
+
 func hasLatestEntry(contestID int, minutesAgo int) bool {
 	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
 	var count int
@@ -207,6 +220,7 @@ func main() {
 
 	e.POST("/contest", createContest)
 	e.POST("/entry", createLogEntry)
+	e.DELETE("/entry/:entry_id", deleteLogEntry)
 	e.POST("/entry/:contest_id/:log_type", uploadLogFile)
 
 	e.GET("/entry", getLogEntry)
@@ -249,6 +263,20 @@ func createLogEntry(c echo.Context) error {
 		return echo.ErrInternalServerError
 	} else {
 		return c.JSON(http.StatusOK, id)
+	}
+}
+
+func deleteLogEntry(c echo.Context) error {
+	entryIDraw := c.Param("entry_id")
+	entryID, err := strconv.Atoi(entryIDraw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Entry ID is invalid")
+	}
+
+	if ok := deleteLogByID(entryID); !ok {
+		return echo.ErrInternalServerError
+	} else {
+		return c.JSON(http.StatusOK, "OK")
 	}
 }
 
