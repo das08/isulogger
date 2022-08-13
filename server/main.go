@@ -31,6 +31,7 @@ type LogEntry struct {
 	ID            int       `json:"id" db:"id"`
 	ContestID     int       `json:"contest_id" db:"contest_id"`
 	Timestamp     time.Time `json:"timestamp" db:"timestamp"`
+	BranchName    string    `json:"branch_name" db:"branch_name"`
 	Score         int       `json:"score" db:"score"`
 	Message       string    `json:"message" db:"message"`
 	AccessLogPath string    `json:"access_log_path" db:"access_log_path"`
@@ -56,7 +57,7 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	}
 
 	var id int
-	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, score, message) VALUES($1,$2,$3,$4) RETURNING id", entry.ContestID, entry.Timestamp, entry.Score, entry.Message).Scan(&id)
+	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, branch_name, score, message) VALUES($1,$2,$3,$4,$5) RETURNING id", entry.ContestID, entry.Timestamp, entry.BranchName, entry.Score, entry.Message).Scan(&id)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
 	}
@@ -114,7 +115,7 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 
 	for rows.Next() {
 		var e LogEntry
-		err := rows.Scan(&e.ID, &e.ContestID, &e.Timestamp, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
+		err := rows.Scan(&e.ID, &e.ContestID, &e.Timestamp, &e.BranchName, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
 		if err != nil {
 			fmt.Println("Error: Scan entry failed: ", err)
 		} else {
@@ -223,9 +224,10 @@ func hello(c echo.Context) error {
 
 func createLogEntry(c echo.Context) error {
 	type postData struct {
-		ContestID int    `json:"contest_id"`
-		Score     int    `json:"score"`
-		Message   string `json:"message"`
+		ContestID  int    `json:"contest_id"`
+		BranchName string `json:"branch_name"`
+		Score      int    `json:"score"`
+		Message    string `json:"message"`
 	}
 	var p postData
 	if err := c.Bind(&p); err != nil {
@@ -236,10 +238,11 @@ func createLogEntry(c echo.Context) error {
 	}
 
 	entry := LogEntry{
-		ContestID: p.ContestID,
-		Timestamp: time.Now(),
-		Score:     p.Score,
-		Message:   p.Message,
+		ContestID:  p.ContestID,
+		Timestamp:  time.Now(),
+		BranchName: p.BranchName,
+		Score:      p.Score,
+		Message:    p.Message,
 	}
 
 	if ok, id := insertLogEntry(&entry); !ok {

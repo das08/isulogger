@@ -40,6 +40,7 @@
 
 <script>
 import axios from "axios";
+import {authHeaders} from "@/ls";
 
 export default {
   data: () => ({
@@ -60,6 +61,8 @@ export default {
       console.log("submit", this.contest_name);
       axios.post("http://localhost:8082/contest", {
         contest_name: this.contest_name,
+      }, {
+        headers: authHeaders(),
       })
           .then((response) => {
             console.log(response.data);

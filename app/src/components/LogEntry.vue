@@ -129,7 +129,8 @@ export default {
         { text: 'Message', value: 'message', width: '25%' },
         { text: 'Access Log', value: 'access_log', width: '10%' },
         { text: 'Slow Log', value: 'slow_log', width: '10%' },
-        { text: 'Status', value: 'status', width: '20%' },
+        { text: 'Status', value: 'status', width: '10%' },
+        { text: 'Branch', value: 'branch_name', width: '10%' },
       ],
       entries: [],
       dialog: false,
@@ -257,8 +258,8 @@ export default {
 
   mounted() {
     if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
-      this.selected_contest = JSON.parse(JSON.stringify(localStorage.getItem("contest_id")));
-      console.log("mounted",this.selected_contest);
+      this.selected_contest = parseInt(JSON.parse(JSON.stringify(localStorage.getItem("contest_id"))));
+      console.log("mounted",this.selected_contest, typeof this.selected_contest);
       this.getLogEntry(this.selected_contest);
     }
     this.getContest();
