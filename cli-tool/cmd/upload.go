@@ -7,10 +7,8 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io"
@@ -18,7 +16,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -143,117 +140,19 @@ func init() {
 	uploadCmd.Flags().BoolP("no-score", "x", false, "Skip score prompt")
 }
 
-func promptGetScore(p Prompt) int {
-	validate := func(input string) error {
-		// check if it is a number
-		_, err := strconv.Atoi(input)
-		if err != nil && input != "" {
-			return errors.New(p.errorMsg)
-		}
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Default:   "",
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	contestID, _ := strconv.Atoi(result)
-
-	return contestID
-}
-
-func promptGetMessage(p Prompt) string {
-	validate := func(input string) error {
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	return result
-}
-
-func promptGetYN(p Prompt) bool {
-	validate := func(input string) error {
-		if input != "y" && input != "n" && input != "Y" && input != "N" {
-			return errors.New(p.errorMsg)
-		}
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Default:   "y",
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-	if result == "y" || result == "Y" {
-		return true
-	}
-	return false
-}
-
 func getScoreMessage() {
 	fmt.Println("Enter score and message. Leave score blank to skip creating new log entry.")
 	scorePrompt := Prompt{
 		promptMsg: "Enter score: ",
 		errorMsg:  "Score has to be greater than 0",
 	}
-	_score := promptGetScore(scorePrompt)
+	_score := PromptGetScore(scorePrompt)
 
 	messagePrompt := Prompt{
 		promptMsg: "Enter message: ",
 		errorMsg:  "Message can't be empty",
 	}
-	_message := promptGetMessage(messagePrompt)
+	_message := PromptGetString(messagePrompt)
 
 	score = _score
 	message = _message
@@ -338,16 +237,9 @@ func postScoreMessage() {
 	}
 
 	if resp.StatusCode == 200 {
-		color.Set(color.FgGreen, color.Bold)
-		fmt.Printf("[OK] ")
-		color.Unset()
-		fmt.Printf("Score and message posted successfully. %d\n", resp.StatusCode)
+		printSuccess(fmt.Sprintf("Score and message successfully posted to IsuLogger. %d", resp.StatusCode))
 	} else {
-		color.Set(color.FgRed, color.Bold)
-		fmt.Printf("[ERROR] ")
-		color.Unset()
-		fmt.Printf("Score and message posting failed. %d\n", resp.StatusCode)
-		os.Exit(1)
+		printError(fmt.Sprintf("Score and message posting failed. %d", resp.StatusCode))
 	}
 }
 
@@ -356,7 +248,7 @@ func confirmMessage() bool {
 		promptMsg: "Are you sure you want to upload logs? (Y/n): ",
 		errorMsg:  "Please enter y or n",
 	}
-	return promptGetYN(confirmPrompt)
+	return PromptGetYN(confirmPrompt)
 }
 
 func postLog(logType string) {
@@ -413,15 +305,8 @@ func postLog(logType string) {
 	}
 
 	if resp.StatusCode == 200 {
-		color.Set(color.FgGreen, color.Bold)
-		fmt.Printf("[OK] ")
-		color.Unset()
-		fmt.Printf("%s log posted successfully. %d\n", logType, resp.StatusCode)
+		printSuccess(fmt.Sprintf("%s log posted successfully. %d", logType, resp.StatusCode))
 	} else {
-		color.Set(color.FgRed, color.Bold)
-		fmt.Printf("[Error] ")
-		color.Unset()
-		fmt.Printf("%s log posting failed. %d\n", logType, resp.StatusCode)
-		//os.Exit(1)
+		printError(fmt.Sprintf("%s log posting failed. %d", logType, resp.StatusCode))
 	}
 }
