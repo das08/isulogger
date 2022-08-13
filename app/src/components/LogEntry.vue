@@ -1,5 +1,8 @@
 <template>
   <v-card>
+    <v-alert v-model="error_alert" dense text type="error">
+      {{ error_message }}
+    </v-alert>
     <v-card-title>
       <v-container fluid class="headline">
         <v-row align="center">
@@ -132,6 +135,8 @@ export default {
       dialog: false,
       log_type: "",
       log_contents: [],
+      error_alert: false,
+      error_message: "",
     }
   },
   methods: {
@@ -158,8 +163,13 @@ export default {
               this.entries.push(response.data[i]);
             }
             this.loading = false;
+            this.error_alert = false;
           })
-          .catch((err) => alert(err));
+          .catch((err) => {
+            this.error_alert = true;
+            this.loading = false;
+            this.error_message = err.message;
+          });
     },
 
     getContest() {
@@ -175,8 +185,13 @@ export default {
               return;
             }
             this.contests = response.data;
+            this.error_alert = false;
           })
-          .catch((err) => alert(err));
+          .catch((err) => {
+            this.error_alert = true;
+            this.loading = false;
+            this.error_message = err.message;
+          });
     },
 
     onButtonClick(item, logType) {
@@ -206,8 +221,13 @@ export default {
 
             this.log_type = logType;
             this.dialog = true;
+            this.error_alert = false;
           })
-          .catch((err) => alert(err))
+          .catch((err) => {
+            this.error_alert = true;
+            this.loading = false;
+            this.error_message = err.message;
+          });
     },
 
     onContestSelect(contestID) {
