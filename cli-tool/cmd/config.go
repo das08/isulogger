@@ -5,16 +5,10 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
-	"github.com/spf13/viper"
-	"net/url"
-	"os"
-	"strconv"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 type Prompt struct {
@@ -36,110 +30,6 @@ func init() {
 	rootCmd.AddCommand(configCmd)
 }
 
-func promptGetContestID(p Prompt) int {
-	validate := func(input string) error {
-		if len(input) <= 0 {
-			return errors.New(p.errorMsg)
-		}
-
-		id, err := strconv.Atoi(input)
-		if err != nil {
-			return errors.New("has to be integer")
-		}
-		if id <= 0 {
-			return errors.New("has to be greater than 0")
-		}
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	contestID, _ := strconv.Atoi(result)
-
-	return contestID
-}
-
-func promptGetURL(p Prompt) string {
-	validate := func(input string) error {
-		if len(input) <= 0 {
-			return errors.New(p.errorMsg)
-		}
-		_, err := url.ParseRequestURI(input)
-		if err != nil {
-			return errors.New("invalid url")
-		}
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	return result
-}
-
-func promptGetString(p Prompt) string {
-	validate := func(input string) error {
-		return nil
-	}
-
-	templates := &promptui.PromptTemplates{
-		Prompt:  "{{ . }} ",
-		Valid:   "{{ . | green }} ",
-		Invalid: "{{ . | red }} ",
-		Success: "{{ . | bold }} ",
-	}
-
-	prompt := promptui.Prompt{
-		Label:     p.promptMsg,
-		Templates: templates,
-		Validate:  validate,
-		Stdout:    &BellSkipper{},
-	}
-
-	result, err := prompt.Run()
-	if err != nil {
-		fmt.Printf("Prompt failed %v\n", err)
-		os.Exit(1)
-	}
-
-	return result
-}
-
 func saveConfiguration() {
 	viper.WriteConfig()
 }
@@ -149,31 +39,31 @@ func configuration() {
 		promptMsg: "Enter isulogger API URL: ",
 		errorMsg:  "has to be valid URL",
 	}
-	isuloggerAPI := promptGetURL(isuloggerAPIPrompt)
+	isuloggerAPI := PromptGetURL(isuloggerAPIPrompt)
 
 	secretKeyPrompt := Prompt{
 		promptMsg: "Enter secret key: ",
 		errorMsg:  "has to be valid secret key",
 	}
-	secretKey := promptGetString(secretKeyPrompt)
+	secretKey := PromptGetString(secretKeyPrompt)
 
 	contestIDPrompt := Prompt{
 		"Default Contest ID: ",
 		"Contest ID must be integer and greater than 0",
 	}
-	contestID := promptGetContestID(contestIDPrompt)
+	contestID := PromptGetContestID(contestIDPrompt)
 
 	accessLogPrompt := Prompt{
 		"Access Log Path: ",
 		"Access Log must be valid path",
 	}
-	accessLog := promptGetString(accessLogPrompt)
+	accessLog := PromptGetString(accessLogPrompt)
 
 	slowLogPrompt := Prompt{
 		"Slow Log Path: ",
 		"Slow Log must be valid path",
 	}
-	slowLog := promptGetString(slowLogPrompt)
+	slowLog := PromptGetString(slowLogPrompt)
 
 	viper.Set("isulogger_api", isuloggerAPI)
 	viper.Set("secret_key", secretKey)
