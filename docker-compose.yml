@@ -8,8 +8,6 @@ services:
       dockerfile: Dockerfile
     restart: always
     tty: true
-    environment:
-        - ISULOGGER_API=http://localhost:8082
     ports:
       - "8083:8080"
 
