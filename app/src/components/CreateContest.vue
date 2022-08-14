@@ -59,7 +59,7 @@ export default {
   methods: {
     submit () {
       console.log("submit", this.contest_name);
-      axios.post("http://localhost:8082/contest", {
+      axios.post("/api/contest", {
         contest_name: this.contest_name,
       }, {
         headers: authHeaders(),

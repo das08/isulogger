@@ -148,7 +148,7 @@ export default {
       this.loading = true;
       this.entries = [];
       return axios
-          .get("http://localhost:8082/entry?contest_id="+contestID, {
+          .get("/api/entry?contest_id="+contestID, {
             dataType: "json",
             headers: authHeaders(),
           })
@@ -174,7 +174,7 @@ export default {
 
     getContest() {
       return axios
-          .get("http://localhost:8082/contest", {
+          .get("/api/contest", {
             dataType: "json",
             headers: authHeaders(),
           })
@@ -204,7 +204,7 @@ export default {
         return;
       }
       return axios
-          .get("http://localhost:8082/log/"+filePath+"?id=1", {
+          .get("/api/log/"+filePath+"?id=1", {
             dataType: "text",
             headers: authHeaders(),
           })
