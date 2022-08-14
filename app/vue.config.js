@@ -9,6 +9,7 @@ module.exports = defineConfig({
         target: 'http://isulogger-server:8082',
         pathRewrite: { "^/api/": "/" }
       },
-    }
+    },
+    allowedHosts: ["all"],
   }
 })
