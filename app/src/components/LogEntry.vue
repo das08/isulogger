@@ -237,7 +237,7 @@ export default {
     onDeleteEntry(item) {
       this.loading = true;
       return axios
-          .delete("http://localhost:8082/entry/"+item.id, {
+          .delete("/api/entry/"+item.id, {
             dataType: "json",
             headers: authHeaders(),
           })
