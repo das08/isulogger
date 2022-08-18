@@ -153,7 +153,7 @@ export default {
         return;
       }
       this.loading = true;
-      this.entries = [];
+      let entries = [];
       return axios
           .get("/api/entry?contest_id="+contestID, {
             dataType: "json",
@@ -167,10 +167,11 @@ export default {
             }
             for (let i = 0; i < response.data.length; i++) {
               response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
-              this.entries.push(response.data[i]);
+              entries.push(response.data[i]);
             }
             this.loading = false;
             this.error_alert = false;
+            this.entries = entries;
           })
           .catch((err) => {
             this.error_alert = true;
@@ -289,6 +290,12 @@ export default {
       this.getLogEntry(this.selected_contest);
     }
     this.getContest();
+
+    console.log('mounted');
+    setInterval(() => {
+      console.log('interval');
+      this.getLogEntry(this.selected_contest);
+    }, 5000);
   },
 }
 
