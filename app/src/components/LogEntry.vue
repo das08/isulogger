@@ -291,9 +291,7 @@ export default {
     }
     this.getContest();
 
-    console.log('mounted');
     setInterval(() => {
-      console.log('interval');
       this.getLogEntry(this.selected_contest);
     }, 5000);
   },
