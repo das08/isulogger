@@ -114,7 +114,7 @@ var uploadCmd = &cobra.Command{
 		}
 
 		// Check if score and message are set
-		if score != 0 {
+		if score != -1 {
 			postScoreMessage()
 		} else {
 			printWarning("Score is not set. Skipping score and message upload.")

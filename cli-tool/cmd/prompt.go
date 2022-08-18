@@ -12,6 +12,9 @@ import (
 
 func PromptGetScore(p Prompt) int {
 	validate := func(input string) error {
+		if input == "0" {
+			return nil
+		}
 		// check if it is a number
 		_, err := strconv.Atoi(input)
 		if err != nil && input != "" {
@@ -41,9 +44,12 @@ func PromptGetScore(p Prompt) int {
 		os.Exit(1)
 	}
 
-	contestID, _ := strconv.Atoi(result)
+	score, _ := strconv.Atoi(result)
+	if result == "" {
+		score = -1
+	}
 
-	return contestID
+	return score
 }
 
 func PromptGetString(p Prompt) string {
