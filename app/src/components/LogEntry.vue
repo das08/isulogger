@@ -312,5 +312,6 @@ function convertTimestamp(timestamp) {
   word-wrap: normal;
   font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
   font-size: 12px;
+  color: black;
 }
 </style>
