@@ -310,7 +310,7 @@ function convertTimestamp(timestamp) {
 #log_dialog {
   white-space: pre;
   word-wrap: normal;
-  font-family: Monaco,monospace;
+  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
   font-size: 12px;
 }
 </style>
