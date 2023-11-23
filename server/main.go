@@ -168,18 +168,23 @@ func hasLatestEntry(contestID int, minutesAgo int) bool {
 }
 
 func insertLogFileToLatest(contestID int, logType, logPath string) (bool, string) {
-	var id int
+	var result sql.Result
 	var err error
 	switch logType {
 	case "access":
-		err = db.QueryRow("UPDATE entry SET access_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
+		result, err = db.Exec("UPDATE entry SET access_log_path = ? WHERE id IN (SELECT id FROM entry WHERE contest_id = ? ORDER BY id DESC LIMIT 1)", logPath, contestID)
 
 	case "slow":
-		err = db.QueryRow("UPDATE entry SET slow_log_path = $1 WHERE id IN (SELECT id FROM entry WHERE contest_id = $2 ORDER BY id DESC LIMIT 1) RETURNING id", logPath, contestID).Scan(&id)
+		result, err = db.Exec("UPDATE entry SET slow_log_path = ? WHERE id IN (SELECT id FROM entry WHERE contest_id = ? ORDER BY id DESC LIMIT 1)", logPath, contestID)
 	}
 
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		fmt.Println("Error: Get last insert id failed: ", err)
 	}
 
 	if id > 0 {
