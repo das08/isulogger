@@ -221,7 +221,7 @@ func insertLogFileByID(contestID, entryID int, logType, logPath string) (bool, s
 }
 
 func updateMessageByID(contestID, entryID int, message string) (bool, error) {
-	result, err := db.Exec("UPDATE entry SET message = $1 WHERE contest_id = $2 AND id = $3", message, contestID, entryID)
+	result, err := db.Exec("UPDATE entry SET message = ? WHERE contest_id = ? AND id = ?", message, contestID, entryID)
 	if err != nil {
 		return false, err
 	}
