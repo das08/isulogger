@@ -16,10 +16,9 @@ import (
 )
 
 var (
-	db           *sql.DB
-	PostgresUser = os.Getenv("POSTGRES_USER")
-	PostgresPass = os.Getenv("POSTGRES_PASSWORD")
-	secretKey    string
+	db        *sql.DB
+	DB_PATH   string = os.Getenv("DB_PATH")
+	secretKey string
 )
 
 type Contest struct {
@@ -40,7 +39,7 @@ type LogEntry struct {
 }
 
 func initializeDB() *sql.DB {
-	_db, err := sql.Open("postgres", fmt.Sprintf("postgres://%s:%s@isulogger-db:5432/isulogger?sslmode=disable", PostgresUser, PostgresPass))
+	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s", DB_PATH))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -56,10 +55,14 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 		entry.Timestamp = time.Now()
 	}
 
-	var id int
-	err := db.QueryRow("INSERT INTO entry(contest_id, timestamp, branch_name, score, message) VALUES($1,$2,$3,$4,$5) RETURNING id", entry.ContestID, entry.Timestamp, entry.BranchName, entry.Score, entry.Message).Scan(&id)
+	result, err := db.Exec("INSERT INTO entry(contest_id, timestamp, branch_name, score, message) VALUES(?,?,?,?,?)", entry.ContestID, entry.Timestamp, entry.BranchName, entry.Score, entry.Message)
 	if err != nil {
 		fmt.Println("Error: Create entry failed: ", err)
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		fmt.Println("Error: Get last insert id failed: ", err)
 	}
 	if id > 0 {
 		return true, fmt.Sprintf("%d", id)
