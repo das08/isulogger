@@ -19,28 +19,9 @@ services:
       restart: always
       tty: true
       environment:
-        POSTGRES_USER: admin
-        POSTGRES_PASSWORD: admin
-      depends_on:
-        - isulogger-db
+        DB_PATH: /data/db.sqlite3
       volumes:
         - ./server:/go/src/app
+        - ./data:/data
       ports:
         - "8082:8082"
-
-  isulogger-db:
-    container_name: isulogger-db
-    build:
-      context: ./db
-      dockerfile: Dockerfile
-    volumes:
-      - postgres:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-
-volumes:
-  postgres:
