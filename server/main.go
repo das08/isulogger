@@ -111,9 +111,9 @@ func selectContest() []Contest {
 
 func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 	var entry []LogEntry
-	query := "SELECT * FROM entry WHERE contest_id = $1 ORDER BY timestamp asc"
+	query := "SELECT * FROM entry WHERE contest_id = ? ORDER BY timestamp asc"
 	if orderBy == "desc" {
-		query = "SELECT * FROM entry WHERE contest_id = $1 ORDER BY timestamp desc"
+		query = "SELECT * FROM entry WHERE contest_id = ? ORDER BY timestamp desc"
 	}
 	rows, err := db.Query(query, ContestID)
 	if err != nil {
