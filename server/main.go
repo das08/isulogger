@@ -134,16 +134,23 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 }
 
 func deleteLogByID(entryID int) bool {
-	var count int
-	err := db.QueryRow("DELETE FROM entry WHERE id = $1 RETURNING id", entryID).Scan(&count)
-	if err == sql.ErrNoRows {
-		return false
-	}
+	result, err := db.Exec("DELETE FROM entry WHERE id = ?", entryID)
 	if err != nil {
 		fmt.Println("Error: Delete entry failed: ", err)
 		return false
 	}
-	return true
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		fmt.Println("Error: Get rows affected failed: ", err)
+		return false
+	}
+
+	if rowsAffected == 0 {
+		return false
+	} else {
+		return true
+	}
 }
 
 func hasLatestEntry(contestID int, minutesAgo int) bool {
