@@ -12,7 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
@@ -27,19 +27,19 @@ type Contest struct {
 }
 
 type LogEntry struct {
-	ID            int       `json:"id" db:"id"`
-	ContestID     int       `json:"contest_id" db:"contest_id"`
-	Timestamp     time.Time `json:"timestamp" db:"timestamp"`
-	BranchName    string    `json:"branch_name" db:"branch_name"`
-	Score         int       `json:"score" db:"score"`
-	Message       string    `json:"message" db:"message"`
-	AccessLogPath string    `json:"access_log_path" db:"access_log_path"`
-	SlowLogPath   string    `json:"slow_log_path" db:"slow_log_path"`
-	ImagePath     string    `json:"image_path" db:"image_path"`
+	ID            int    `json:"id" db:"id"`
+	ContestID     int    `json:"contest_id" db:"contest_id"`
+	Timestamp     string `json:"timestamp" db:"timestamp"`
+	BranchName    string `json:"branch_name" db:"branch_name"`
+	Score         int    `json:"score" db:"score"`
+	Message       string `json:"message" db:"message"`
+	AccessLogPath string `json:"access_log_path" db:"access_log_path"`
+	SlowLogPath   string `json:"slow_log_path" db:"slow_log_path"`
+	ImagePath     string `json:"image_path" db:"image_path"`
 }
 
 func initializeDB() *sql.DB {
-	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s", DB_PATH))
+	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s?mode=rwc", DB_PATH))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -51,8 +51,9 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 	if entry.ContestID == 0 {
 		return false, ""
 	}
-	if entry.Timestamp.IsZero() {
-		entry.Timestamp = time.Now()
+	if entry.Timestamp == "" {
+		currentTime := time.Now()
+		entry.Timestamp = currentTime.Format(time.RFC3339)
 	}
 
 	result, err := db.Exec("INSERT INTO entry(contest_id, timestamp, branch_name, score, message) VALUES(?,?,?,?,?)", entry.ContestID, entry.Timestamp, entry.BranchName, entry.Score, entry.Message)
@@ -294,7 +295,7 @@ func createLogEntry(c echo.Context) error {
 
 	entry := LogEntry{
 		ContestID:  p.ContestID,
-		Timestamp:  time.Now(),
+		Timestamp:  time.Now().Format(time.RFC3339),
 		BranchName: p.BranchName,
 		Score:      p.Score,
 		Message:    p.Message,
