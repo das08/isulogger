@@ -88,3 +88,45 @@ http://localhost:8082/entry/:contest_id/:log_type
     - Success: 200 OK, エントリの`id`が返される
     - Error: 500 Internal Server Error, 400 Bad Request
 
+## エントリの個別修正
+
+### Message の取得
+指定したエントリ`id`のメッセージを取得する。
+
+- Endpoint
+  [GET /entry/:contest_id/:entry_id/message]
+```http request
+http://localhost:8082/entry/:contest_id/:entry_id/message
+```
+
+- Request
+  なし
+
+- Response
+    - Success: 200 OK
+      ```json
+      {
+        "message": string
+      }
+      ```
+    - Error: 500 Internal Server Error, 400 Not Found (the error message contains the reason)
+
+### Message の更新
+指定したエントリ`id`のメッセージを更新する。
+
+- Endpoint
+  [PUT /entry/:contest_id/:entry_id/message]
+```http request
+http://localhost:8082/entry/:contest_id/:entry_id/message
+```
+
+- Request
+  ```json
+  {
+    "message": string
+  }
+  ```
+
+- Response
+    - Success: 200 OK
+    - Error: 500 Internal Server Error, 400 Not Found (the error message contains the reason)

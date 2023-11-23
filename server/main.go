@@ -195,6 +195,20 @@ func insertLogFileByID(contestID, entryID int, logType, logPath string) (bool, s
 	}
 }
 
+func updateMessageByID(contestID, entryID int, message string) (bool, error) {
+	result, err := db.Exec("UPDATE entry SET message = $1 WHERE contest_id = $2 AND id = $3", message, contestID, entryID)
+	if err != nil {
+		return false, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return (rowsAffected > 0), nil
+}
+
 func main() {
 	// Initialize DB connection
 	db = initializeDB()
@@ -222,6 +236,8 @@ func main() {
 	e.POST("/entry", createLogEntry)
 	e.DELETE("/entry/:entry_id", deleteLogEntry)
 	e.POST("/entry/:contest_id/:log_type", uploadLogFile)
+
+	e.PUT("/entry/:contest_id/:entry_id/message", updateMessage)
 
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
@@ -356,6 +372,45 @@ func uploadLogFile(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, id)
 	} else {
 		return c.JSON(http.StatusOK, id)
+	}
+}
+
+func updateMessage(c echo.Context) error {
+	type postData struct {
+		Message string `json:"message"`
+	}
+
+	contestIDRaw := c.Param("contest_id")
+	if contestIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+
+	entryIDRaw := c.Param("entry_id")
+	if entryIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Entry ID is required")
+	}
+	entryID, err := strconv.Atoi(entryIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Entry ID is invalid")
+	}
+
+	var p postData
+	if err := c.Bind(&p); err != nil {
+		return echo.ErrInternalServerError
+	}
+
+	updated, err := updateMessageByID(contestID, entryID, p.Message)
+	if err != nil {
+		c.Logger().Errorf("updateMessageById: %v", err)
+		return echo.ErrInternalServerError
+	} else if !updated {
+		return c.String(http.StatusNotFound, "contest or entry not found")
+	} else {
+		return c.NoContent(http.StatusNoContent)
 	}
 }
 

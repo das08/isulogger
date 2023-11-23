@@ -1,5 +1,19 @@
 <template>
   <v-card>
+    <v-dialog v-model="showModal" max-width="500px">
+      <v-card>
+        <v-card-title class="headline">Message</v-card-title>
+        <v-card-text>
+          <div contenteditable="true" v-html="selectedMessage" @input="onMessageInput" aria-multiline="true" role="textbox">
+          </div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" text @click="onCloseMessageModal">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-alert v-model="error_alert" dense text type="error">
       {{ error_message }}
     </v-alert>
@@ -45,6 +59,12 @@
 
       <template v-slot:[`item.score`]="{ item }">
         <strong>{{ item.score }}</strong>
+      </template>
+
+      <template v-slot:[`item.message`]="{ item }">
+        <div @click="onMessageClick(item)">
+          {{ item.message }}
+        </div>
       </template>
 
       <template v-slot:[`item.access_log`]="{ item }">
@@ -145,6 +165,11 @@ export default {
       log_contents: [],
       error_alert: false,
       error_message: "",
+
+      selectedEntryId: -1,
+      selectedMessage: "",
+      editedMessage: "",
+      showModal: false,
     }
   },
   methods: {
@@ -233,6 +258,52 @@ export default {
             this.loading = false;
             this.error_message = err.message;
           });
+    },
+
+    onMessageClick(item) {
+      // console.log('onMessage click: ', item);
+
+      const lines = item.message.split("\n");
+      // for each line, create one div
+      let message = "";
+      for (let i = 0; i < lines.length; i++) {
+        message += "<div>" + lines[i] + "</div>";
+      }
+      this.selectedMessage = message;
+
+      this.editedMessage = item.message;
+      this.selectedEntryId = item.id;
+      this.showModal = true;
+    },
+
+    onMessageInput(event) {
+      this.editedMessage = event.target.innerText;
+    },
+
+    onCloseMessageModal() {
+      this.showModal = false;
+      this.selectedMessage = "";
+
+      const selectedEntryId = this.selectedEntryId;
+      const editedMessage = this.editedMessage;
+
+      this.selectedEntryId = -1;
+      this.editedMessage = "";
+
+      // update message with editedMessage
+      axios.put("/api/entry/" + this.selected_contest + "/" +  selectedEntryId + "/message", {
+        message: editedMessage,
+      }, {
+        dataType: "json",
+        headers: authHeaders(),
+      }).catch((err) => {
+        this.error_alert = true;
+        this.loading = false;
+        this.error_message = err.message;
+      }).then(() => {
+        // trigger refresh immediately
+        this.getLogEntry(this.selected_contest);
+      });
     },
 
     onDeleteEntry(item) {
