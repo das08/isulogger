@@ -72,11 +72,16 @@ func insertLogEntry(entry *LogEntry) (bool, string) {
 }
 
 func insertContest(contestName string) (bool, string) {
-	var id int
-	err := db.QueryRow("INSERT INTO contest(contest_name) VALUES($1) RETURNING contest_id", contestName).Scan(&id)
+	result, err := db.Exec("INSERT INTO contest(contest_name) VALUES(?)", contestName)
 	if err != nil {
 		fmt.Println("Error: Create contest failed: ", err)
 	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		fmt.Println("Error: Get last insert id failed: ", err)
+	}
+
 	if id > 0 {
 		return true, fmt.Sprintf("%d", id)
 	} else {
