@@ -156,7 +156,7 @@ func deleteLogByID(entryID int) bool {
 func hasLatestEntry(contestID int, minutesAgo int) bool {
 	t := time.Now().Add(-time.Duration(minutesAgo) * time.Minute)
 	var count int
-	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = $1 AND timestamp >= $2", contestID, t).Scan(&count)
+	err := db.QueryRow("SELECT COUNT(*) FROM entry WHERE contest_id = ? AND timestamp >= ?", contestID, t)
 	if err != nil {
 		fmt.Println("Error: Get entry failed: ", err)
 	}
