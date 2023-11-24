@@ -19,5 +19,6 @@ CREATE TABLE attached_file(
     file_type VARCHAR(32) NOT NULL,
     source VARCHAR(255) NOT NULL,
     file_path TEXT NOT NULL,
-    FOREIGN KEY (entry_id) REFERENCES entry (id)
+    FOREIGN KEY (entry_id) REFERENCES entry (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    UNIQUE (entry_id, file_type, source)
 );

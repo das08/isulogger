@@ -27,12 +27,13 @@ type Contest struct {
 }
 
 type LogEntry struct {
-	ID         int    `json:"id" db:"id"`
-	ContestID  int    `json:"contest_id" db:"contest_id"`
-	Timestamp  string `json:"timestamp" db:"timestamp"`
-	BranchName string `json:"branch_name" db:"branch_name"`
-	Score      int    `json:"score" db:"score"`
-	Message    string `json:"message" db:"message"`
+	ID            int            `json:"id" db:"id"`
+	ContestID     int            `json:"contest_id" db:"contest_id"`
+	Timestamp     string         `json:"timestamp" db:"timestamp"`
+	BranchName    string         `json:"branch_name" db:"branch_name"`
+	Score         int            `json:"score" db:"score"`
+	Message       string         `json:"message" db:"message"`
+	AttachedFiles []AttachedFile `json:"attached_files"`
 }
 
 type AttachedFile struct {
@@ -115,13 +116,13 @@ func selectContest() []Contest {
 	return contest
 }
 
-func selectLogEntry(ContestID int, orderBy string) []LogEntry {
+func selectLogEntry(contestID int, orderBy string) []LogEntry {
 	var entry []LogEntry
-	query := "SELECT * FROM entry WHERE contest_id = ? ORDER BY timestamp asc"
+	query := "SELECT id,timestamp,branch_name,score,message FROM entry WHERE contest_id = ? ORDER BY timestamp asc"
 	if orderBy == "desc" {
-		query = "SELECT * FROM entry WHERE contest_id = ? ORDER BY timestamp desc"
+		query = "SELECT id,timestamp,branch_name,score,message FROM entry WHERE contest_id = ? ORDER BY timestamp desc"
 	}
-	rows, err := db.Query(query, ContestID)
+	rows, err := db.Query(query, contestID)
 	if err != nil {
 		fmt.Println("Error: Get entry failed: ", err)
 	}
@@ -129,12 +130,35 @@ func selectLogEntry(ContestID int, orderBy string) []LogEntry {
 
 	for rows.Next() {
 		var e LogEntry
-		err := rows.Scan(&e.ID, &e.ContestID, &e.Timestamp, &e.BranchName, &e.Score, &e.Message, &e.AccessLogPath, &e.SlowLogPath, &e.ImagePath)
+		e.ContestID = contestID
+		err := rows.Scan(&e.ID, &e.Timestamp, &e.BranchName, &e.Score, &e.Message)
 		if err != nil {
 			fmt.Println("Error: Scan entry failed: ", err)
-		} else {
-			entry = append(entry, e)
+			continue
 		}
+
+		// Next, fetch the log files attached to this entry
+		// TODO: this is a N+1 query, ISUCON CHANCE
+		fileQuery := `SELECT id,file_type,source,file_path FROM attached_file WHERE entry_id=?`
+		fileRows, err := db.Query(fileQuery, e.ID)
+		if err != nil {
+			fmt.Println("Error: Get attached file failed: ", err)
+			continue
+		}
+		defer fileRows.Close()
+		e.AttachedFiles = []AttachedFile{} // assign empty slice to avoid null
+		for fileRows.Next() {
+			var f AttachedFile
+			f.EntryID = e.ID
+			err := fileRows.Scan(&f.ID, &f.FileType, &f.Source, &f.FilePath)
+			if err != nil {
+				fmt.Println("Error: Scan attached file failed: ", err)
+				continue
+			}
+			e.AttachedFiles = append(e.AttachedFiles, f)
+		}
+
+		entry = append(entry, e)
 	}
 	return entry
 }
@@ -173,41 +197,24 @@ func hasLatestEntry(contestID int, minutesAgo int) bool {
 	}
 }
 
-func insertLogFileToLatest(contestID int, logType, logPath string) (bool, string) {
-	var result sql.Result
-	var err error
-	switch logType {
-	case "access":
-		result, err = db.Exec("UPDATE entry SET access_log_path = ? WHERE id IN (SELECT id FROM entry WHERE contest_id = ? ORDER BY id DESC LIMIT 1)", logPath, contestID)
-
-	case "slow":
-		result, err = db.Exec("UPDATE entry SET slow_log_path = ? WHERE id IN (SELECT id FROM entry WHERE contest_id = ? ORDER BY id DESC LIMIT 1)", logPath, contestID)
-	}
-
+func insertLogFileToLatest(contestID int, logType, source, logPath string) (bool, string) {
+	// first find the latest entry_id
+	var entryID int
+	err := db.QueryRow(`SELECT id FROM entry WHERE contest_id=? ORDER BY timestamp DESC LIMIT 1`, contestID).Scan(&entryID)
 	if err != nil {
-		fmt.Println("Error: Create entry failed: ", err)
+		fmt.Println("Error: Get entry failed: ", err)
+		return false, "Failed to find the latest entry"
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		fmt.Println("Error: Get last insert id failed: ", err)
-	}
-
-	if id > 0 {
-		return true, fmt.Sprintf("%d", id)
-	} else {
-		return false, "Failed to update entry"
-	}
+	return insertLogFileByID(contestID, entryID, logType, source, logPath)
 }
 
-func insertLogFileByID(contestID, entryID int, logType, logPath string) (bool, string) {
-	var result sql.Result
-	var err error
-	switch logType {
-	case "access":
-		result, err = db.Exec("UPDATE entry SET access_log_path = ? WHERE contest_id = ? AND id = ?", logPath, contestID, entryID)
-	case "slow":
-		result, err = db.Exec("UPDATE entry SET slow_log_path = ? WHERE contest_id = ? AND id = ?", logPath, contestID, entryID)
+func insertLogFileByID(contestID, entryID int, logType, source, logPath string) (bool, string) {
+	// upsert the log file with (entry_id, log_type, source) as the key
+	result, err := db.Exec(`INSERT INTO attached_file (entry_id, file_type, source, file_path) VALUES (?, ?, ?, ?) ON CONFLICT(entry_id, file_type, source) DO UPDATE SET file_path = ?`, entryID, logType, source, logPath, logPath)
+	if err != nil {
+		fmt.Println("Error: Create entry failed: ", err)
+		return false, "Failed to insert log file"
 	}
 
 	if err != nil {
@@ -240,6 +247,26 @@ func updateMessageByID(contestID, entryID int, message string) (bool, error) {
 	return (rowsAffected > 0), nil
 }
 
+func listSourcesUsedInContest(contestID int) ([]string, error) {
+	rows, err := db.Query("SELECT DISTINCT(af.source) FROM attached_file af INNER JOIN entry e ON af.entry_id=e.id WHERE e.contest_id=? ORDER BY af.source ASC", contestID)
+	if err != nil {
+		return nil, err
+	}
+
+	var sources []string
+
+	for rows.Next() {
+		var source string
+		err := rows.Scan(&source)
+		if err != nil {
+			return nil, err
+		}
+		sources = append(sources, source)
+	}
+
+	return sources, nil
+}
+
 func main() {
 	// Initialize DB connection
 	db = initializeDB()
@@ -269,6 +296,7 @@ func main() {
 	e.POST("/entry/:contest_id/:log_type", uploadLogFile)
 
 	e.PUT("/entry/:contest_id/:entry_id/message", updateMessage)
+	e.GET("/entry/:contest_id/sources", listSources)
 
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
@@ -366,6 +394,11 @@ func uploadLogFile(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "Log Type is invalid")
 	}
 
+	source := c.QueryParam("source")
+	if source == "" {
+		return c.String(http.StatusBadRequest, "Source is required")
+	}
+
 	file, err := c.FormFile("log")
 	if err != nil {
 		return echo.ErrInternalServerError
@@ -394,9 +427,9 @@ func uploadLogFile(c echo.Context) error {
 	var ok bool
 	var id string
 	if entryID > 0 {
-		ok, id = insertLogFileByID(contestID, entryID, logType, file.Filename)
+		ok, id = insertLogFileByID(contestID, entryID, logType, source, file.Filename)
 	} else {
-		ok, id = insertLogFileToLatest(contestID, logType, file.Filename)
+		ok, id = insertLogFileToLatest(contestID, logType, source, file.Filename)
 	}
 
 	if !ok {
@@ -443,6 +476,29 @@ func updateMessage(c echo.Context) error {
 	} else {
 		return c.NoContent(http.StatusNoContent)
 	}
+}
+
+func listSources(c echo.Context) error {
+	type returnData struct {
+		Sources []string `json:"sources"`
+	}
+
+	contestIDRaw := c.Param("contest_id")
+	if contestIDRaw == "" {
+		return c.String(http.StatusBadRequest, "Contest ID is required")
+	}
+	contestID, err := strconv.Atoi(contestIDRaw)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Contest ID is invalid")
+	}
+
+	sources, err := listSourcesUsedInContest(contestID)
+	if err != nil {
+		c.Logger().Errorf("listSourcesUsedInContest: %v", err)
+		return echo.ErrInternalServerError
+	}
+
+	return c.JSON(http.StatusOK, returnData{Sources: sources})
 }
 
 func getLogEntry(c echo.Context) error {

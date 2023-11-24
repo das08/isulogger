@@ -1,11 +1,11 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -64,11 +64,18 @@ func configuration() {
 	}
 	slowLog := PromptGetString(slowLogPrompt)
 
+	sourcePrompt := Prompt{
+		"Source: ",
+		"Source must be valid string",
+	}
+	source := PromptGetString(sourcePrompt)
+
 	viper.Set("isulogger_api", isuloggerAPI)
 	viper.Set("secret_key", secretKey)
 	viper.Set("contest_id", contestID)
 	viper.Set("access_log_path", accessLog)
 	viper.Set("slow_log_path", slowLog)
+	viper.Set("source", source)
 
 	saveConfiguration()
 	printSuccess(fmt.Sprintf("Configuration saved: %s\n", viper.ConfigFileUsed()))
