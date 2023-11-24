@@ -27,19 +27,24 @@ type Contest struct {
 }
 
 type LogEntry struct {
-	ID            int    `json:"id" db:"id"`
-	ContestID     int    `json:"contest_id" db:"contest_id"`
-	Timestamp     string `json:"timestamp" db:"timestamp"`
-	BranchName    string `json:"branch_name" db:"branch_name"`
-	Score         int    `json:"score" db:"score"`
-	Message       string `json:"message" db:"message"`
-	AccessLogPath string `json:"access_log_path" db:"access_log_path"`
-	SlowLogPath   string `json:"slow_log_path" db:"slow_log_path"`
-	ImagePath     string `json:"image_path" db:"image_path"`
+	ID         int    `json:"id" db:"id"`
+	ContestID  int    `json:"contest_id" db:"contest_id"`
+	Timestamp  string `json:"timestamp" db:"timestamp"`
+	BranchName string `json:"branch_name" db:"branch_name"`
+	Score      int    `json:"score" db:"score"`
+	Message    string `json:"message" db:"message"`
+}
+
+type AttachedFile struct {
+	ID       int    `json:"id" db:"id"`
+	EntryID  int    `json:"entry_id" db:"entry_id"`
+	FileType string `json:"file_type" db:"file_type"`
+	Source   string `json:"source" db:"source"`
+	FilePath string `json:"file_path" db:"file_path"`
 }
 
 func initializeDB() *sql.DB {
-	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s?mode=rwc", DB_PATH))
+	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s?mode=rw", DB_PATH))
 	if err != nil {
 		fmt.Println(err)
 	}

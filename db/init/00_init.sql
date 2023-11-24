@@ -10,8 +10,14 @@ CREATE TABLE entry (
     branch_name varchar(255) NOT NULL default '',
     score int not null default 0,
     message text NOT NULL default '',
-    access_log_path text NOT NULL default '',
-    slow_log_path text NOT NULL default '',
-    image_path text NOT NULL default '',
     FOREIGN KEY (contest_id) REFERENCES contest (contest_id)
+);
+
+CREATE TABLE attached_file(
+    id INTEGER PRIMARY KEY,
+    entry_id INTEGER NOT NULL,
+    file_type VARCHAR(32) NOT NULL,
+    source VARCHAR(255) NOT NULL,
+    file_path TEXT NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES entry (id)
 );
