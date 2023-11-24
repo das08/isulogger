@@ -9,7 +9,7 @@ services:
     restart: always
     tty: true
     ports:
-      - "8083:8080"
+      - "127.0.0.1:8083:8080"
 
   isulogger-server:
       container_name: isulogger-server
@@ -24,4 +24,4 @@ services:
         - ./server:/go/src/app
         - ./data:/data
       ports:
-        - "8082:8082"
+        - "127.0.0.1:8082:8082"
