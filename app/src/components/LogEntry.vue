@@ -79,7 +79,7 @@
       </template>
 
       <template v-slot:[`item.slow_logs`]="{ item }">
-        <v-tooltip bottom v-for="file in item.access_logs" :key="file?.file_path">
+        <v-tooltip bottom v-for="file in item.slow_logs" :key="file?.file_path">
           <template v-slot:activator="{ on }">
             <v-btn :disabled="file === null" v-on="on" class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Slow Log', file.file_path)">
               <v-icon dark>mdi-database</v-icon>
@@ -213,6 +213,8 @@ export default {
                   if (attachedFile.source !== source) {
                     continue;
                   }
+                  // console.log('checking ' + source);
+                  // console.log(attachedFile)
                   if (attachedFile.file_type === "access") {
                     entry.access_logs.push({
                       file_path: attachedFile.file_path,
@@ -229,6 +231,10 @@ export default {
                     console.warn("unknown file type: ", attachedFile.file_type);
                     continue;
                   }
+
+                  if (found.access_log && found.slow_log) {
+                    break;
+                  }
                 }
                 
                 if (!found.access_log) {
@@ -241,6 +247,7 @@ export default {
               entries.push(entry);
               // console.log(this.entries)
             }
+            // console.log(entries);
             this.loading = false;
             this.error_alert = false;
             this.entries = entries;
