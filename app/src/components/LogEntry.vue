@@ -67,32 +67,26 @@
         </div>
       </template>
 
-      <template v-slot:[`item.access_log`]="{ item }">
-        <template v-if="item.access_log_path === ''">
-          <v-btn class="mx-2" fab small color="primary" disabled>
-            <v-icon dark>mdi-server</v-icon>
-          </v-btn>
-        </template>
-        <template v-else>
-          <v-btn class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log')">
-            <v-icon dark>mdi-server</v-icon>
-          </v-btn>
-        </template>
-
+      <template v-slot:[`item.access_logs`]="{ item }">
+        <v-tooltip bottom v-for="file in item.access_logs" :key="file?.file_path">
+          <template v-slot:activator="{ on }">
+            <v-btn :disabled="file === null" v-on="on" class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log', file.file_path)">
+              <v-icon dark>mdi-server</v-icon>
+            </v-btn>
+          </template>
+          <span>{{ file?.source }}</span>
+        </v-tooltip>
       </template>
 
-      <template v-slot:[`item.slow_log`]="{ item }">
-        <template v-if="item.slow_log_path === ''">
-          <v-btn class="mx-2" fab small color="secondary" disabled>
-            <v-icon dark>mdi-database</v-icon>
-          </v-btn>
-        </template>
-        <template v-else>
-          <v-btn class="mx-2" fab dark small color="secondary" @click="onButtonClick(item, 'Slow Log')">
-            <v-icon dark>mdi-database</v-icon>
-          </v-btn>
-        </template>
-
+      <template v-slot:[`item.slow_logs`]="{ item }">
+        <v-tooltip bottom v-for="file in item.slow_logs" :key="file?.file_path">
+          <template v-slot:activator="{ on }">
+            <v-btn :disabled="file === null" v-on="on" class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Slow Log', file.file_path)">
+              <v-icon dark>mdi-database</v-icon>
+            </v-btn>
+          </template>
+          <span>{{ file?.source }}</span>
+        </v-tooltip>
       </template>
 
       <template v-slot:[`item.status`]="{}">
@@ -153,8 +147,8 @@ export default {
         { text: 'Best', value: 'max_score', width: '10%', align: 'end'},
         { text: 'Score', value: 'score', width: '10%' },
         { text: 'Message', value: 'message', width: '30%' },
-        { text: 'Access Log', value: 'access_log', width: '10%' },
-        { text: 'Slow Log', value: 'slow_log', width: '10%' },
+        { text: 'Access Log', value: 'access_logs', width: '10%' },
+        { text: 'Slow Log', value: 'slow_logs', width: '10%' },
         { text: 'Status', value: 'status', width: '5%' },
         { text: 'Branch', value: 'branch_name', width: '10%' },
         { text: '', value: 'delete_log', width: '10%' },
@@ -179,7 +173,22 @@ export default {
       }
       this.loading = true;
       let entries = [];
-      return axios
+
+      return axios.get("/api/entry/" + contestID + "/sources", {
+        headers: authHeaders(),
+      }).then(
+        (res) => {
+          // console.log(res.data);
+          const sources = res.data.sources;
+          return sources;
+        }
+      ).catch((e) => {
+        console.warn(e);
+        this.error_alert = true;
+        this.loading = false;
+        this.error_message = "Error occurred while fetching the list of sources."
+      }).then((sources) => {
+        axios
           .get("/api/entry?contest_id="+contestID, {
             dataType: "json",
             headers: authHeaders(),
@@ -192,17 +201,62 @@ export default {
             }
             for (let i = 0; i < response.data.length; i++) {
               response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
-              entries.push(response.data[i]);
+              const entry = response.data[i];
+              entry.access_logs = [];
+              entry.slow_logs = [];
+              for (const source of sources) {
+                let found = {
+                  access_log: false,
+                  slow_log: false,
+                };
+                for (const attachedFile of entry.attached_files) {
+                  if (attachedFile.source !== source) {
+                    continue;
+                  }
+                  // console.log('checking ' + source);
+                  // console.log(attachedFile)
+                  if (attachedFile.file_type === "access") {
+                    entry.access_logs.push({
+                      file_path: attachedFile.file_path,
+                      source: source
+                    });
+                    found.access_log = true;
+                  } else if (attachedFile.file_type === "slow") {
+                    entry.slow_logs.push({
+                      file_path: attachedFile.file_path,
+                      source: source
+                    });
+                    found.slow_log = true;
+                  } else {
+                    console.warn("unknown file type: ", attachedFile.file_type);
+                    continue;
+                  }
+
+                  if (found.access_log && found.slow_log) {
+                    break;
+                  }
+                }
+                
+                if (!found.access_log) {
+                  entry.access_logs.push(null);
+                }
+                if (!found.slow_log) {
+                  entry.slow_logs.push(null);
+                }
+              }
+              entries.push(entry);
+              // console.log(this.entries)
             }
+            // console.log(entries);
             this.loading = false;
             this.error_alert = false;
             this.entries = entries;
-          })
-          .catch((err) => {
+          }).catch((err) => {
             this.error_alert = true;
             this.loading = false;
             this.error_message = err.message;
           });
+        });
     },
 
     getContest() {
@@ -226,16 +280,7 @@ export default {
           });
     },
 
-    onButtonClick(item, logType) {
-      let filePath = "";
-      if (logType === "Access Log") {
-        filePath = item.access_log_path;
-      } else if (logType === "Slow Log") {
-        filePath = item.slow_log_path;
-      }
-      if (filePath === undefined || filePath === "") {
-        return;
-      }
+    onButtonClick(item, logType, filePath) {
       return axios
           .get("/api/log/"+filePath+"?id=1", {
             dataType: "text",

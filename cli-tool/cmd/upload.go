@@ -1,6 +1,5 @@
 /*
 Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
@@ -8,9 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -19,6 +15,10 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -31,6 +31,7 @@ var (
 	message       string
 	skip          bool
 	noScore       bool
+	source        string
 )
 
 // uploadCmd represents the up command
@@ -86,6 +87,10 @@ var uploadCmd = &cobra.Command{
 		if accessLogPath == "" && slowLogPath == "" {
 			fmt.Println("Access log path and/or slow log path are not set. ")
 			os.Exit(1)
+		}
+
+		if viper.Get("source") != nil {
+			source = viper.Get("source").(string)
 		}
 
 		// Set the skip flag
@@ -305,7 +310,7 @@ func postLog(logType string) {
 		panic("Error")
 	}
 
-	endpoint := fmt.Sprintf("%s/entry/%d/%s", isuloggerAPI, contestID, logType)
+	endpoint := fmt.Sprintf("%s/entry/%d/%s?source=%s", isuloggerAPI, contestID, logType, source)
 	req, err := http.NewRequest("POST", endpoint, body)
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
