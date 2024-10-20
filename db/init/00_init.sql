@@ -22,3 +22,10 @@ CREATE TABLE attached_file(
     FOREIGN KEY (entry_id) REFERENCES entry (id) ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (entry_id, file_type, source)
 );
+
+CREATE TABLE machines(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    address TEXT NOT NULL,
+    files TEXT NOT NULL -- json
+);

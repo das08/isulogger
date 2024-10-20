@@ -45,7 +45,7 @@ type AttachedFile struct {
 }
 
 func initializeDB() *sql.DB {
-	_db, err := sql.Open("sqlite3", fmt.Sprintf("file://%s?mode=rw", DB_PATH))
+	_db, err := sql.Open("sqlite3", fmt.Sprintf("file:%s", DB_PATH))
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -267,6 +267,11 @@ func listSourcesUsedInContest(contestID int) ([]string, error) {
 	return sources, nil
 }
 
+func reportError(c echo.Context, desc string, err error) error {
+	c.Logger().Errorf("%s: %v", desc, err)
+	return echo.ErrInternalServerError
+}
+
 func main() {
 	// Initialize DB connection
 	db = initializeDB()
@@ -301,6 +306,9 @@ func main() {
 	e.GET("/entry", getLogEntry)
 	e.GET("/contest", getContest)
 	e.GET("/check/entry", checkLatestEntry)
+
+	e.PUT("/config/pull", PutConfig)
+	e.GET("/config/pull", GetConfig)
 
 	e.Static("/log", "log")
 

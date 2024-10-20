@@ -4,8 +4,13 @@
       <v-card>
         <v-card-title class="headline">Message</v-card-title>
         <v-card-text>
-          <div contenteditable="true" v-html="selectedMessage" @input="onMessageInput" aria-multiline="true" role="textbox">
-          </div>
+          <div
+            contenteditable="true"
+            v-html="selectedMessage"
+            @input="onMessageInput"
+            aria-multiline="true"
+            role="textbox"
+          ></div>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -20,37 +25,41 @@
     <v-card-title>
       <v-container fluid class="headline">
         <v-row align="center">
-          <v-col
-              class="d-flex"
-              cols="12"
-              sm="6"
-          >
+          <v-col class="d-flex" cols="12" sm="6">
             <v-select
-                v-model="selected_contest"
-                @change="onContestSelect"
-                :items="contests"
-                :item-text="item =>`${item.contest_name} (Contest ID: ${item.contest_id})`"
-                item-value="contest_id"
-                label="選択中のコンテスト"
-                outlined
+              v-model="selected_contest"
+              @change="onContestSelect"
+              :items="contests"
+              :item-text="
+                (item) =>
+                  `${item.contest_name} (Contest ID: ${item.contest_id})`
+              "
+              item-value="contest_id"
+              label="選択中のコンテスト"
+              outlined
             ></v-select>
+          </v-col>
+          <v-col class="d-flex" cols="12" sm="6">
+            <v-row>
+              <v-text-field placeholder="Entry description" />
+              <v-btn> Pull </v-btn>
+            </v-row>
           </v-col>
         </v-row>
       </v-container>
 
-<!--      <span class="headline">ISUCON12本選</span>-->
+      <!--      <span class="headline">ISUCON12本選</span>-->
     </v-card-title>
     <v-data-table
-        :headers="headers"
-        :items="entries"
-        :loading="loading"
-        :footer-props="{
-          'items-per-page-options': [10, 20, 30, 40, 50]
-        }"
-        :items-per-page="20"
-        loading-text="Loading... Please wait"
+      :headers="headers"
+      :items="entries"
+      :loading="loading"
+      :footer-props="{
+        'items-per-page-options': [10, 20, 30, 40, 50],
+      }"
+      :items-per-page="20"
+      loading-text="Loading... Please wait"
     >
-
       <template v-slot:[`item.max_score`]="{ item }">
         <template v-if="item.score === maxScore()">
           <v-icon small class="mr-2"> mdi-crown </v-icon>
@@ -68,9 +77,21 @@
       </template>
 
       <template v-slot:[`item.access_logs`]="{ item }">
-        <v-tooltip bottom v-for="file in item.access_logs" :key="file?.file_path">
+        <v-tooltip
+          bottom
+          v-for="file in item.access_logs"
+          :key="file?.file_path"
+        >
           <template v-slot:activator="{ on }">
-            <v-btn :disabled="file === null" v-on="on" class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Access Log', file.file_path)">
+            <v-btn
+              :disabled="file === null"
+              v-on="on"
+              class="mx-2"
+              fab
+              small
+              color="primary"
+              @click="onButtonClick(item, 'Access Log', file.file_path)"
+            >
               <v-icon dark>mdi-server</v-icon>
             </v-btn>
           </template>
@@ -81,7 +102,15 @@
       <template v-slot:[`item.slow_logs`]="{ item }">
         <v-tooltip bottom v-for="file in item.slow_logs" :key="file?.file_path">
           <template v-slot:activator="{ on }">
-            <v-btn :disabled="file === null" v-on="on" class="mx-2" fab small color="primary" @click="onButtonClick(item, 'Slow Log', file.file_path)">
+            <v-btn
+              :disabled="file === null"
+              v-on="on"
+              class="mx-2"
+              fab
+              small
+              color="primary"
+              @click="onButtonClick(item, 'Slow Log', file.file_path)"
+            >
               <v-icon dark>mdi-database</v-icon>
             </v-btn>
           </template>
@@ -90,28 +119,30 @@
       </template>
 
       <template v-slot:[`item.status`]="{}">
-        <v-chip color="green" outlined small>
-          Completed
-        </v-chip>
+        <v-chip color="green" outlined small> Completed </v-chip>
       </template>
 
       <template v-slot:[`item.delete_log`]="{ item }">
-        <v-btn class="mx-2" icon x-small color="error" @click="onDeleteEntry(item)">
+        <v-btn
+          class="mx-2"
+          icon
+          x-small
+          color="error"
+          @click="onDeleteEntry(item)"
+        >
           <v-icon dark>mdi-trash-can</v-icon>
         </v-btn>
       </template>
-
     </v-data-table>
 
     <v-row justify="center">
-      <v-dialog
-          v-model="dialog"
-          scrollable
-          width="95%"
-      >
+      <v-dialog v-model="dialog" scrollable width="95%">
         <v-card>
           <v-card-title>
-            <span class="text-h5">【{{ log_type }} Result】 {{ log_contents.timestamp }} (Score: {{ log_contents.score }})</span>
+            <span class="text-h5"
+              >【{{ log_type }} Result】 {{ log_contents.timestamp }} (Score:
+              {{ log_contents.score }})</span
+            >
           </v-card-title>
           <v-card-text>
             <span class="text-subtitle-1">{{ log_contents.file_name }}</span>
@@ -123,7 +154,6 @@
       </v-dialog>
     </v-row>
   </v-card>
-
 </template>
 
 <script>
@@ -131,27 +161,27 @@ import { authHeaders } from "@/ls";
 import axios from "axios";
 
 export default {
-  data () {
+  data() {
     return {
       loading: false,
       contests: [],
       selected_contest: null,
       headers: [
         {
-          text: 'Timestamp',
-          align: 'start',
+          text: "Timestamp",
+          align: "start",
           filterable: true,
-          value: 'timestamp',
-          width: '15%',
+          value: "timestamp",
+          width: "15%",
         },
-        { text: 'Best', value: 'max_score', width: '10%', align: 'end'},
-        { text: 'Score', value: 'score', width: '10%' },
-        { text: 'Message', value: 'message', width: '30%' },
-        { text: 'Access Log', value: 'access_logs', width: '10%' },
-        { text: 'Slow Log', value: 'slow_logs', width: '10%' },
-        { text: 'Status', value: 'status', width: '5%' },
-        { text: 'Branch', value: 'branch_name', width: '10%' },
-        { text: '', value: 'delete_log', width: '10%' },
+        { text: "Best", value: "max_score", width: "10%", align: "end" },
+        { text: "Score", value: "score", width: "10%" },
+        { text: "Message", value: "message", width: "30%" },
+        { text: "Access Log", value: "access_logs", width: "10%" },
+        { text: "Slow Log", value: "slow_logs", width: "10%" },
+        { text: "Status", value: "status", width: "5%" },
+        { text: "Branch", value: "branch_name", width: "10%" },
+        { text: "", value: "delete_log", width: "10%" },
       ],
       entries: [],
       dialog: false,
@@ -164,7 +194,7 @@ export default {
       selectedMessage: "",
       editedMessage: "",
       showModal: false,
-    }
+    };
   },
   methods: {
     getLogEntry(contestID) {
@@ -174,135 +204,144 @@ export default {
       this.loading = true;
       let entries = [];
 
-      return axios.get("/api/entry/" + contestID + "/sources", {
-        headers: authHeaders(),
-      }).then(
-        (res) => {
+      return axios
+        .get("/api/entry/" + contestID + "/sources", {
+          headers: authHeaders(),
+        })
+        .then((res) => {
           // console.log(res.data);
           const sources = res.data.sources;
           return sources;
-        }
-      ).catch((e) => {
-        console.warn(e);
-        this.error_alert = true;
-        this.loading = false;
-        this.error_message = "Error occurred while fetching the list of sources."
-      }).then((sources) => {
-        axios
-          .get("/api/entry?contest_id="+contestID, {
-            dataType: "json",
-            headers: authHeaders(),
-          })
-          .then((response) => {
-            if (response.data === null) {
-              this.entries = [];
-              this.loading = false;
-              return;
-            }
-            for (let i = 0; i < response.data.length; i++) {
-              response.data[i].timestamp = convertTimestamp(response.data[i].timestamp);
-              const entry = response.data[i];
-              entry.access_logs = [];
-              entry.slow_logs = [];
-              for (const source of sources) {
-                let found = {
-                  access_log: false,
-                  slow_log: false,
-                };
-                for (const attachedFile of entry.attached_files) {
-                  if (attachedFile.source !== source) {
-                    continue;
-                  }
-                  // console.log('checking ' + source);
-                  // console.log(attachedFile)
-                  if (attachedFile.file_type === "access") {
-                    entry.access_logs.push({
-                      file_path: attachedFile.file_path,
-                      source: source
-                    });
-                    found.access_log = true;
-                  } else if (attachedFile.file_type === "slow") {
-                    entry.slow_logs.push({
-                      file_path: attachedFile.file_path,
-                      source: source
-                    });
-                    found.slow_log = true;
-                  } else {
-                    console.warn("unknown file type: ", attachedFile.file_type);
-                    continue;
+        })
+        .catch((e) => {
+          console.warn(e);
+          this.error_alert = true;
+          this.loading = false;
+          this.error_message =
+            "Error occurred while fetching the list of sources.";
+        })
+        .then((sources) => {
+          axios
+            .get("/api/entry?contest_id=" + contestID, {
+              dataType: "json",
+              headers: authHeaders(),
+            })
+            .then((response) => {
+              if (response.data === null) {
+                this.entries = [];
+                this.loading = false;
+                return;
+              }
+              for (let i = 0; i < response.data.length; i++) {
+                response.data[i].timestamp = convertTimestamp(
+                  response.data[i].timestamp
+                );
+                const entry = response.data[i];
+                entry.access_logs = [];
+                entry.slow_logs = [];
+                for (const source of sources) {
+                  let found = {
+                    access_log: false,
+                    slow_log: false,
+                  };
+                  for (const attachedFile of entry.attached_files) {
+                    if (attachedFile.source !== source) {
+                      continue;
+                    }
+                    // console.log('checking ' + source);
+                    // console.log(attachedFile)
+                    if (attachedFile.file_type === "access") {
+                      entry.access_logs.push({
+                        file_path: attachedFile.file_path,
+                        source: source,
+                      });
+                      found.access_log = true;
+                    } else if (attachedFile.file_type === "slow") {
+                      entry.slow_logs.push({
+                        file_path: attachedFile.file_path,
+                        source: source,
+                      });
+                      found.slow_log = true;
+                    } else {
+                      console.warn(
+                        "unknown file type: ",
+                        attachedFile.file_type
+                      );
+                      continue;
+                    }
+
+                    if (found.access_log && found.slow_log) {
+                      break;
+                    }
                   }
 
-                  if (found.access_log && found.slow_log) {
-                    break;
+                  if (!found.access_log) {
+                    entry.access_logs.push(null);
+                  }
+                  if (!found.slow_log) {
+                    entry.slow_logs.push(null);
                   }
                 }
-                
-                if (!found.access_log) {
-                  entry.access_logs.push(null);
-                }
-                if (!found.slow_log) {
-                  entry.slow_logs.push(null);
-                }
+                entries.push(entry);
+                // console.log(this.entries)
               }
-              entries.push(entry);
-              // console.log(this.entries)
-            }
-            // console.log(entries);
-            this.loading = false;
-            this.error_alert = false;
-            this.entries = entries;
-          }).catch((err) => {
-            this.error_alert = true;
-            this.loading = false;
-            this.error_message = err.message;
-          });
+              // console.log(entries);
+              this.loading = false;
+              this.error_alert = false;
+              this.entries = entries;
+            })
+            .catch((err) => {
+              this.error_alert = true;
+              this.loading = false;
+              this.error_message = err.message;
+            });
         });
     },
 
     getContest() {
       return axios
-          .get("/api/contest", {
-            dataType: "json",
-            headers: authHeaders(),
-          })
-          .then((response) => {
-            if (response.data === null) {
-              this.contests = [];
-              return;
-            }
-            this.contests = response.data;
-            this.error_alert = false;
-          })
-          .catch((err) => {
-            this.error_alert = true;
-            this.loading = false;
-            this.error_message = err.message;
-          });
+        .get("/api/contest", {
+          dataType: "json",
+          headers: authHeaders(),
+        })
+        .then((response) => {
+          if (response.data === null) {
+            this.contests = [];
+            return;
+          }
+          this.contests = response.data;
+          this.error_alert = false;
+        })
+        .catch((err) => {
+          this.error_alert = true;
+          this.loading = false;
+          this.error_message = err.message;
+        });
     },
 
     onButtonClick(item, logType, filePath) {
       return axios
-          .get("/api/log/"+filePath+"?id=1", {
-            dataType: "text",
-            headers: authHeaders(),
-          })
-          .then((response) => {
-            this.log_contents = {
-              file_name: filePath,
-              log: response.data,
-              score: item.score,
-              timestamp: item.timestamp,
-            }
+        .get("/api/log/" + filePath + "?id=1", {
+          dataType: "text",
+          headers: authHeaders(),
+        })
+        .then((response) => {
+          this.log_contents = {
+            file_name: filePath,
+            log: response.data,
+            score: item.score,
+            timestamp: item.timestamp,
+          };
 
-            this.log_type = logType;
-            this.dialog = true;
-            this.error_alert = false;
-          })
-          .catch((err) => {
-            this.error_alert = true;
-            this.loading = false;
-            this.error_message = err.message;
-          });
+          this.log_type = logType;
+          this.dialog = true;
+          this.error_alert = false;
+        })
+        .catch((err) => {
+          this.error_alert = true;
+          this.loading = false;
+          this.error_message = err.message;
+        });
     },
 
     onMessageClick(item) {
@@ -336,38 +375,49 @@ export default {
       this.editedMessage = "";
 
       // update message with editedMessage
-      axios.put("/api/entry/" + this.selected_contest + "/" +  selectedEntryId + "/message", {
-        message: editedMessage,
-      }, {
-        dataType: "json",
-        headers: authHeaders(),
-      }).catch((err) => {
-        this.error_alert = true;
-        this.loading = false;
-        this.error_message = err.message;
-      }).then(() => {
-        // trigger refresh immediately
-        this.getLogEntry(this.selected_contest);
-      });
+      axios
+        .put(
+          "/api/entry/" +
+            this.selected_contest +
+            "/" +
+            selectedEntryId +
+            "/message",
+          {
+            message: editedMessage,
+          },
+          {
+            dataType: "json",
+            headers: authHeaders(),
+          }
+        )
+        .catch((err) => {
+          this.error_alert = true;
+          this.loading = false;
+          this.error_message = err.message;
+        })
+        .then(() => {
+          // trigger refresh immediately
+          this.getLogEntry(this.selected_contest);
+        });
     },
 
     onDeleteEntry(item) {
       this.loading = true;
       return axios
-          .delete("/api/entry/"+item.id, {
-            dataType: "json",
-            headers: authHeaders(),
-          })
-          .then(() => {
-            this.loading = false;
-            this.error_alert = false;
-            this.getLogEntry(this.selected_contest);
-          })
-          .catch((err) => {
-            this.error_alert = true;
-            this.loading = false;
-            this.error_message = err.message;
-          });
+        .delete("/api/entry/" + item.id, {
+          dataType: "json",
+          headers: authHeaders(),
+        })
+        .then(() => {
+          this.loading = false;
+          this.error_alert = false;
+          this.getLogEntry(this.selected_contest);
+        })
+        .catch((err) => {
+          this.error_alert = true;
+          this.loading = false;
+          this.error_message = err.message;
+        });
     },
 
     onContestSelect(contestID) {
@@ -377,11 +427,11 @@ export default {
     },
 
     compareScore(index) {
-      let maxScore = this.entries.reduce((a,b)=>a.score>b.score?a:b);
+      let maxScore = this.entries.reduce((a, b) => (a.score > b.score ? a : b));
       if (this.entries[index].score === maxScore.score) {
         return "blue";
       }
-      if (index < this.entries.length -1 ) {
+      if (index < this.entries.length - 1) {
         if (this.entries[index].score > this.entries[index + 1].score) {
           return "green";
         } else if (this.entries[index].score < this.entries[index + 1].score) {
@@ -395,14 +445,20 @@ export default {
     },
 
     maxScore() {
-      return this.entries.reduce((a,b)=>a.score>b.score?a:b).score;
-    }
+      return this.entries.reduce((a, b) => (a.score > b.score ? a : b)).score;
+    },
   },
 
   mounted() {
-    if(Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
-      this.selected_contest = parseInt(JSON.parse(JSON.stringify(localStorage.getItem("contest_id"))));
-      console.log("mounted",this.selected_contest, typeof this.selected_contest);
+    if (Object.prototype.hasOwnProperty.call(localStorage, "contest_id")) {
+      this.selected_contest = parseInt(
+        JSON.parse(JSON.stringify(localStorage.getItem("contest_id")))
+      );
+      console.log(
+        "mounted",
+        this.selected_contest,
+        typeof this.selected_contest
+      );
       this.getLogEntry(this.selected_contest);
     }
     this.getContest();
@@ -411,7 +467,7 @@ export default {
       this.getLogEntry(this.selected_contest);
     }, 5000);
   },
-}
+};
 
 // convert timestamp to date
 function convertTimestamp(timestamp) {
@@ -420,9 +476,9 @@ function convertTimestamp(timestamp) {
   var year = date.getFullYear();
   var month = date.getMonth() + 1;
   var day = date.getDate();
-  var hour = ('0'+date.getHours()).slice(-2);
-  var min = ('0'+date.getMinutes()).slice(-2);
-  var sec = ('0'+date.getSeconds()).slice(-2);
+  var hour = ("0" + date.getHours()).slice(-2);
+  var min = ("0" + date.getMinutes()).slice(-2);
+  var sec = ("0" + date.getSeconds()).slice(-2);
   return year + "/" + month + "/" + day + " " + hour + ":" + min + ":" + sec;
 }
 </script>
@@ -431,7 +487,7 @@ function convertTimestamp(timestamp) {
 #log_dialog {
   white-space: pre;
   word-wrap: normal;
-  font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+  font-family: Menlo, Monaco, Consolas, "Courier New", monospace;
   font-size: 12px;
   color: black;
 }

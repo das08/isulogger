@@ -6,7 +6,7 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '^/api': {
-        target: 'http://isulogger-server:8082',
+        target: 'http://localhost:8082',
         pathRewrite: { "^/api/": "/" }
       },
     },
